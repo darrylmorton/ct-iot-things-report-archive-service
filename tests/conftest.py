@@ -5,6 +5,7 @@ import pytest
 from moto import mock_aws
 
 from tests.config import AWS_REGION
+from things_report_archive_service.service import ThingsReportArchiveService
 
 
 @pytest.fixture
@@ -22,3 +23,10 @@ def sqs_client(aws_credentials):
     with mock_aws():
         conn = boto3.client("sqs", region_name=AWS_REGION)
         yield conn
+
+
+@pytest.fixture
+def archive_service(sqs_client):
+    archive_service = ThingsReportArchiveService()
+
+    yield archive_service
