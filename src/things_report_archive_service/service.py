@@ -8,6 +8,7 @@ from config import (
     get_logger,
     THINGS_REPORT_ARCHIVE_QUEUE,
     QUEUE_WAIT_SECONDS,
+    THINGS_REPORT_JOB_BUCKET_NAME,
 )
 from util.s3_util import s3_upload_zip, create_zip_report_job_path
 
@@ -37,6 +38,8 @@ class ThingsReportArchiveService:
         log.info(f"{job_path=}")
         log.info(f"{job_upload_path=}")
 
+        bucket_files = await self.s3_client.list_objects_v2(Bucket=THINGS_REPORT_JOB_BUCKET_NAME)
+        log.info(f"{bucket_files=}")
         # request bucket contents for *.csv (debug)
         # create zip file
         # upload zip file to bucket
@@ -106,10 +109,6 @@ class ThingsReportArchiveService:
         )
 
         try:
-            # csv_data_rows: list[dict] = create_csv_rows(user_id, response_body)
-            #
-            # write_data_to_csv(report_job_file_path, report_job_filename, csv_data_rows)
-
             s3_upload_zip(
                 self.s3_client,
                 f"{report_job_file_path}/{report_job_filename}",

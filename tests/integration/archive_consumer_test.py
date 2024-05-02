@@ -20,7 +20,7 @@ log = get_logger()
 
 class TestArchiveConsumer:
     message_id = str(uuid.uuid4())
-    user_id = str(uuid.uuid4())
+    user_id = "28ae898f-8a46-4bc1-a64e-c95709308315"
     report_name = "report_name_0"
     job_index = 0
     start_timestamp = "2020-06-20T12:00:00Z"
@@ -28,10 +28,9 @@ class TestArchiveConsumer:
     end_timestamp = "2020-06-23T12:00:00Z"
     end_epoch_timestamp = isodate_to_timestamp(end_timestamp)
     # fmt: off
-    job_file_path_prefix = (f"""
-        {THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{user_id}/
-        {report_name}-{start_epoch_timestamp}-{end_epoch_timestamp}
-    """)
+    job_file_path_prefix = (
+        f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{user_id}/{report_name}-{start_epoch_timestamp}-{end_epoch_timestamp}"
+    )
     job_upload_path = (
         f"{user_id}/{report_name}-{start_epoch_timestamp}-{end_epoch_timestamp}"
     )
