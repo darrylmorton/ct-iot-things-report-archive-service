@@ -26,7 +26,7 @@ def sqs_client(aws_credentials):
 
 
 @pytest.fixture
-def archive_service(sqs_client):
+def archive_service():
     archive_service = ThingsReportArchiveService()
 
     yield archive_service

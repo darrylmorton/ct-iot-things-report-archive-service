@@ -8,9 +8,9 @@ from config import (
     get_logger,
     THINGS_REPORT_ARCHIVE_QUEUE,
     QUEUE_WAIT_SECONDS,
-    THINGS_REPORT_JOB_BUCKET_NAME,
+    THINGS_REPORT_JOB_BUCKET_NAME, THINGS_REPORT_ARCHIVE_DLQ,
 )
-from util.s3_util import s3_upload_zip, create_zip_report_job_path
+from util.s3_util import s3_upload_zip, create_zip_report_job_path, s3_list_job_files
 
 log = get_logger()
 
@@ -23,6 +23,9 @@ class ThingsReportArchiveService:
         self.s3_client = boto3.client("s3", region_name=AWS_REGION)
         self.report_archive_job_queue = self.sqs.Queue(
             f"{THINGS_REPORT_ARCHIVE_QUEUE}.fifo"
+        )
+        self.report_archive_job_dlq = self.sqs.Queue(
+            f"{THINGS_REPORT_ARCHIVE_DLQ}.fifo"
         )
 
     async def _process_message(self, message_body: dict) -> None:
@@ -38,8 +41,13 @@ class ThingsReportArchiveService:
         log.info(f"{job_path=}")
         log.info(f"{job_upload_path=}")
 
-        bucket_files = await self.s3_client.list_objects_v2(Bucket=THINGS_REPORT_JOB_BUCKET_NAME)
-        log.info(f"{bucket_files=}")
+        # response = s3_list_job_files(self.s3_client)
+        # log.info(f"{response=}")
+
+        # bucket_files = self.s3_client.list_objects_v2(
+        #     Bucket=THINGS_REPORT_JOB_BUCKET_NAME
+        # )
+        # log.info(f"{bucket_files=}")
         # request bucket contents for *.csv (debug)
         # create zip file
         # upload zip file to bucket

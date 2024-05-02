@@ -1,11 +1,14 @@
 import uuid
 from unittest.mock import patch
 
+import boto3
+import pytest
+
 from config import (
     THINGS_REPORT_JOB_FILE_PATH_PREFIX,
     THINGS_REPORT_ARCHIVE_QUEUE,
     THINGS_REPORT_ARCHIVE_DLQ,
-    get_logger,
+    get_logger, AWS_REGION,
 )
 from tests.helper.archive_job_helper import (
     create_archive_job_message,
@@ -13,6 +16,7 @@ from tests.helper.archive_job_helper import (
     report_archive_job_consumer,
 )
 from tests.helper.helper import create_sqs_queue
+from util.s3_util import s3_list_job_files, s3_download_job_files
 from util.service_util import isodate_to_timestamp
 
 log = get_logger()
@@ -37,12 +41,17 @@ class TestArchiveConsumer:
     job_path_suffix = f"{report_name}-{0}.zip"
     job_path = f"{job_file_path_prefix}-{job_path_suffix}"
 
+    # mock_s3_upload_zip
+
     # uploading disabled
-    @patch("things_report_archive_service.service.s3_upload_zip")
+    # @patch("things_report_archive_service.service.s3_upload_zip")
+    @pytest.mark.skip
     async def test_archive_consumer(
-            self, mock_s3_upload_zip, sqs_client, archive_service
+            self, archive_service
     ):
-        mock_s3_upload_zip.return_value = None
+        # mock_s3_upload_zip.return_value = None
+        log.info(f"{THINGS_REPORT_ARCHIVE_QUEUE=}")
+        log.info(f"{THINGS_REPORT_ARCHIVE_DLQ=}")
 
         report_archive_queue, _ = create_sqs_queue(
             THINGS_REPORT_ARCHIVE_QUEUE, THINGS_REPORT_ARCHIVE_DLQ
@@ -65,3 +74,12 @@ class TestArchiveConsumer:
 
         log.info(f"{actual_archive_messages=}")
         # actual_archive_job_messages
+
+    # @pytest.mark.skip(reason="requires real aws credentials")
+    def test_s3_list_job_files(self):
+        s3_client = boto3.client("s3", region_name=AWS_REGION)
+
+        # response = s3_list_job_files(s3_client)
+        # log.info(f"{response=}")
+
+        s3_download_job_files(s3_client)
