@@ -112,5 +112,6 @@ def s3_download_job_files(s3_client): # -> list[str]:
         log.error(f"S3 client upload error: {error}")
 
         raise error
-
-    shutil.rmtree(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}")
+    finally:
+        shutil.rmtree(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}")
+        os.remove(archived)
