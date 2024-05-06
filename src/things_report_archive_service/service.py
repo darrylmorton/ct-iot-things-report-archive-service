@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 
 import boto3
 from botocore.exceptions import ClientError
@@ -8,9 +10,10 @@ from config import (
     get_logger,
     THINGS_REPORT_ARCHIVE_QUEUE,
     QUEUE_WAIT_SECONDS,
-    THINGS_REPORT_JOB_BUCKET_NAME, THINGS_REPORT_ARCHIVE_DLQ,
+    THINGS_REPORT_JOB_BUCKET_NAME, THINGS_REPORT_ARCHIVE_DLQ, THINGS_REPORT_JOB_FILE_PATH_PREFIX,
 )
-from util.s3_util import s3_upload_zip, create_zip_report_job_path, s3_list_job_files
+from util.s3_util import upload_zip_file, create_zip_report_job_path, s3_list_job_files, s3_download_job_files, \
+    upload_zip_file
 
 log = get_logger()
 
@@ -41,8 +44,19 @@ class ThingsReportArchiveService:
         log.info(f"{job_path=}")
         log.info(f"{job_upload_path=}")
 
-        # response = s3_list_job_files(self.s3_client)
-        # log.info(f"{response=}")
+        csv_files = s3_list_job_files(self.s3_client)
+        log.info(f"{csv_files=}")
+
+        if len(csv_files) == 0:
+            # TODO handle...
+            pass
+
+        path_prefix, archived = s3_download_job_files(self.s3_client, csv_files)
+
+        if path_prefix and archived:
+            upload_zip_file(self.s3_client, path_prefix, archived)
+
+        # TODO handling conditions???
 
         # bucket_files = self.s3_client.list_objects_v2(
         #     Bucket=THINGS_REPORT_JOB_BUCKET_NAME
@@ -51,7 +65,7 @@ class ThingsReportArchiveService:
         # request bucket contents for *.csv (debug)
         # create zip file
         # upload zip file to bucket
-
+        #
         # await self.upload_zip_job(
         #     user_id,
         #     report_name,
@@ -92,37 +106,36 @@ class ThingsReportArchiveService:
 
             raise error
 
-    async def download_job_files(self) -> None:
-        pass
+    # async def download_job_files(self) -> None:
+    #     pass
 
-    async def upload_zip_job(
-        self,
-        user_id: str,
-        report_name: str,
-        job_index: int,
-        start_timestamp: str,
-        end_timestamp: str,
-        # response_body: list[ThingPayload],
-    ) -> None:
-        log.debug("Uploading job csv file...")
-
-        report_job_file_path, report_job_upload_path, report_job_filename = (
-            create_zip_report_job_path(
-                user_id,
-                report_name,
-                job_index,
-                start_timestamp,
-                end_timestamp,
-            )
-        )
-
-        try:
-            s3_upload_zip(
-                self.s3_client,
-                f"{report_job_file_path}/{report_job_filename}",
-                f"{report_job_upload_path}/{report_job_filename}",
-            )
-        except ClientError as error:
-            log.error(f"S3 client upload error: {error}")
-
-            raise error
+    # async def upload_zip_job(
+    #     self,
+    #     user_id: str,
+    #     report_name: str,
+    #     job_index: int,
+    #     start_timestamp: str,
+    #     end_timestamp: str,
+    # ) -> None:
+    #     log.debug("Uploading job csv file...")
+    #
+    #     report_job_file_path, report_job_upload_path, report_job_filename = (
+    #         create_zip_report_job_path(
+    #             user_id,
+    #             report_name,
+    #             job_index,
+    #             start_timestamp,
+    #             end_timestamp,
+    #         )
+    #     )
+    #
+    #     try:
+    #         s3_upload_zip(
+    #             self.s3_client,
+    #             f"{report_job_file_path}/{report_job_filename}",
+    #             f"{report_job_upload_path}/{report_job_filename}",
+    #         )
+    #     except ClientError as error:
+    #         log.error(f"S3 client upload error: {error}")
+    #
+    #         raise error

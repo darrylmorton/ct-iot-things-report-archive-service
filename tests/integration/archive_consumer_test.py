@@ -16,7 +16,8 @@ from tests.helper.archive_job_helper import (
     report_archive_job_consumer,
 )
 from tests.helper.helper import create_sqs_queue
-from util.s3_util import s3_list_job_files, s3_download_job_files
+from util.s3_util import s3_list_job_files, s3_download_job_files, s3_filter_csv_file, upload_zip_file, \
+    upload_zip_file
 from util.service_util import isodate_to_timestamp
 
 log = get_logger()
@@ -76,10 +77,49 @@ class TestArchiveConsumer:
         # actual_archive_job_messages
 
     # @pytest.mark.skip(reason="requires real aws credentials")
-    def test_s3_list_job_files(self):
+    # def test_s3_list_job_files(self):
+    #     s3_client = boto3.client("s3", region_name=AWS_REGION)
+    #
+    #     # response = s3_list_job_files(s3_client)
+    #     # log.info(f"{response=}")
+    #
+    #     s3_download_job_files(s3_client)
+
+    # @pytest.mark.skip(reason="requires real aws credentials")
+    class TestArchiveConsumerWithRealAwsCredentials:
         s3_client = boto3.client("s3", region_name=AWS_REGION)
 
-        # response = s3_list_job_files(s3_client)
-        # log.info(f"{response=}")
+        path_prefix = '28ae898f-8a46-4bc1-a64e-c95709308315/report_name_0-1592654400-1592913600'
+        filtered_csvs = [
+            {
+                'path_prefix': path_prefix,
+                'filename': 'report_name_0-0.csv'
+            },
+            {
+                'path_prefix': path_prefix,
+                'filename': 'report_name_0-1.csv'
+            }
+        ]
+        archived_path_suffix = 'dist/28ae898f-8a46-4bc1-a64e-c95709308315/report_name_0-1592654400-1592913600.zip'
 
-        s3_download_job_files(s3_client)
+        def test_s3_list_job_files(self):
+            expected_result = self.filtered_csvs
+
+            actual_result = s3_list_job_files(self.s3_client)
+
+            assert actual_result == expected_result
+
+        # def test_s3_download_job_csv_files(self):
+        #     path_prefix, archived = s3_download_job_files(self.s3_client, self.filtered_csvs)
+        #
+        #     assert path_prefix == self.path_prefix
+        #     assert archived.endswith(self.archived_path_suffix) is True
+
+        def test_s3_upload_zip(self):
+            path_prefix, archived = s3_download_job_files(self.s3_client, self.filtered_csvs)
+            log.info(f"TEST {path_prefix=}")
+            log.info(f"TEST {archived=}")
+
+            uploaded = upload_zip_file(self.s3_client, archived, path_prefix)
+            log.info(f"{uploaded=}")
+
