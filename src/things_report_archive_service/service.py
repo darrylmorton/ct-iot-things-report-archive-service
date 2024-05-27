@@ -1,7 +1,4 @@
 import json
-import os
-import shutil
-
 import boto3
 from botocore.exceptions import ClientError
 
@@ -10,17 +7,26 @@ from config import (
     get_logger,
     THINGS_REPORT_ARCHIVE_QUEUE,
     QUEUE_WAIT_SECONDS,
-    THINGS_REPORT_JOB_BUCKET_NAME, THINGS_REPORT_ARCHIVE_DLQ, THINGS_REPORT_JOB_FILE_PATH_PREFIX,
+    THINGS_REPORT_ARCHIVE_DLQ,
+    THINGS_EVENT_QUEUE,
 )
-from util.s3_util import upload_zip_file, create_zip_report_job_path, s3_list_job_files, s3_download_job_files, \
-    upload_zip_file
+from util.s3_util import (
+    s3_list_job_files,
+    s3_download_job_files,
+    upload_zip_file,
+)
+from util.service_util import (
+    EVENT_SUCCESS,
+    EVENT_ERROR,
+    create_event_message,
+)
 
 log = get_logger()
 
 
 class ThingsReportArchiveService:
     def __init__(self):
-        log.debug("initializing ThingsReportArchiveService...")
+        log.info("initializing ThingsReportArchiveService...")
 
         self.sqs = boto3.resource("sqs", region_name=AWS_REGION)
         self.s3_client = boto3.client("s3", region_name=AWS_REGION)
@@ -30,7 +36,9 @@ class ThingsReportArchiveService:
         self.report_archive_job_dlq = self.sqs.Queue(
             f"{THINGS_REPORT_ARCHIVE_DLQ}.fifo"
         )
+        self.event_queue = self.sqs.Queue(f"{THINGS_EVENT_QUEUE}.fifo")
 
+    #
     async def _process_message(self, message_body: dict) -> None:
         log.debug("Processing archive job message...")
 
@@ -47,14 +55,45 @@ class ThingsReportArchiveService:
         csv_files = s3_list_job_files(self.s3_client)
         log.info(f"{csv_files=}")
 
-        if len(csv_files) == 0:
-            # TODO handle...
-            pass
+        # if len(csv_files) == 0:
+        #     # TODO handle...
+        #     pass
 
         path_prefix, archived = s3_download_job_files(self.s3_client, csv_files)
 
+        log.info(f"*** _process_message {path_prefix=} {archived=}")
+
+        # uploaded = False
+        event = EVENT_ERROR
+
         if path_prefix and archived:
             upload_zip_file(self.s3_client, path_prefix, archived)
+            event = EVENT_SUCCESS
+
+        # TODO create message complete structure via util...
+        # event_message = json.dumps({
+        #     "Id": str(message_id),
+        #     "Name": report_name,
+        #     "Date": timestamp,
+        #     "Type": EVENT_TYPE,
+        #     "Event": event,
+        #     "Description": "Report Archive Job Event",
+        #     "Value": f"{presigned_url}",
+        #     "Read": f"{uploaded}",
+        # })
+
+        event_message = create_event_message(
+            s3_client=self.s3_client,
+            name=report_name,
+            event=event,
+            job_upload_path=job_upload_path,
+        )
+        log.info(f"{event_message=}")
+
+        await self.produce([event_message])
+
+        # TODO decide what to return, unit testing this function for consideration...
+        # return [event_message]
 
         # TODO handling conditions???
 
@@ -76,13 +115,13 @@ class ThingsReportArchiveService:
         # )
 
     async def poll(self) -> None:
-        log.debug("Polling for archive job messages...")
+        log.info("Polling for archive job messages...")
 
         while True:
             await self.consume()
 
     async def consume(self) -> None:
-        log.debug("Consuming archive job messages...")
+        log.info("Consuming archive job messages...")
 
         try:
             archive_job_messages = self.report_archive_job_queue.receive_messages(
@@ -90,6 +129,7 @@ class ThingsReportArchiveService:
                 MaxNumberOfMessages=10,
                 WaitTimeSeconds=QUEUE_WAIT_SECONDS,
             )
+            log.info(f"*** CONSUME {archive_job_messages=}")
 
             if len(archive_job_messages) > 0:
                 for archive_job_message in archive_job_messages:
@@ -139,3 +179,16 @@ class ThingsReportArchiveService:
     #         log.error(f"S3 client upload error: {error}")
     #
     #         raise error
+
+    async def produce(self, event_messages: list[dict]) -> list[dict]:
+        log.info(f"Sending event message...{event_messages=}")
+
+        try:
+            if len(event_messages) > 0:
+                self.event_queue.send_messages(Entries=event_messages)
+
+            return event_messages
+        except ClientError as error:
+            log.error(f"Couldn't receive event_queue messages error {error}")
+
+            raise error

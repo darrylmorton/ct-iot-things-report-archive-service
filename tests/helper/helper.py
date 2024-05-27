@@ -33,6 +33,12 @@ def create_sqs_queue(queue_name: str, dlq_name="") -> tuple[Any, Any]:
     return queue, dlq
 
 
+# def create_sns_topic(topic_name: str):
+#     sns = boto3.resource("sns", region_name=AWS_REGION)
+#
+#     return sns.create_topic(Name=topic_name)
+
+
 def validate_uuid4(uuid_string):
     """
     Validate that a UUID string is in

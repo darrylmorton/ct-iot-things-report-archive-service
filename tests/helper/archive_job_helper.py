@@ -95,29 +95,33 @@ async def service_poll(
             await job_service.consume()
 
 
-async def report_archive_job_consumer(
-    report_archive_job_queue: Any, timeout_seconds=0
-) -> list[dict]:
-    timeout = time.time() + timeout_seconds
-    messages = []
-
-    while True:
-        if time.time() > timeout:
-            log.info(f"Task timed out after {timeout_seconds}")
-            break
-
-        archive_job_messages = report_archive_job_queue.receive_messages(
-            MessageAttributeNames=["All"],
-            MaxNumberOfMessages=10,
-            WaitTimeSeconds=QUEUE_WAIT_SECONDS,
-        )
-
-        for archive_job_message in archive_job_messages:
-            messages.append(archive_job_message)
-
-            archive_job_message.delete()
-
-    return messages
+# def report_archive_job_consumer(
+#     report_archive_job_queue: Any, timeout_seconds=0
+# ) -> list[dict]:
+#     timeout = time.time() + timeout_seconds
+#     messages = []
+#
+#     while True:
+#         if time.time() > timeout:
+#             log.info(f"Task timed out after {timeout_seconds}")
+#             break
+#
+#         archive_job_messages = report_archive_job_queue.receive_messages(
+#             MessageAttributeNames=["All"],
+#             MaxNumberOfMessages=10,
+#             WaitTimeSeconds=QUEUE_WAIT_SECONDS,
+#         )
+#
+#         for archive_job_message in archive_job_messages:
+#             log.info(f"TEST CONSUMER archive_job_message: {archive_job_message=}")
+#
+#             messages.append(archive_job_message)
+#
+#             archive_job_message.delete()
+#
+#     log.info(f"TEST CONSUMER message: {messages=}")
+#
+#     return messages
 
 
 def assert_archive_job_message(actual_result: dict, expected_result: dict) -> None:

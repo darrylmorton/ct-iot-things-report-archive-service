@@ -21,12 +21,12 @@ def aws_credentials():
 @pytest.fixture
 def sqs_client(aws_credentials):
     with mock_aws():
-        conn = boto3.client("sqs", region_name=AWS_REGION)
-        yield conn
+        sqs_conn = boto3.client("sqs", region_name=AWS_REGION)
+        yield sqs_conn
 
 
 @pytest.fixture
-def archive_service():
+def archive_service(sqs_client):
     archive_service = ThingsReportArchiveService()
 
     yield archive_service
