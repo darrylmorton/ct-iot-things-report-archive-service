@@ -1,10 +1,9 @@
 import json
 import time
 import uuid
-from typing import Any
 
 from config import get_logger
-from tests.config import THINGS_REPORT_JOB_FILE_PATH_PREFIX, QUEUE_WAIT_SECONDS
+from tests.config import THINGS_REPORT_JOB_FILE_PATH_PREFIX
 from util.s3_util import isodate_to_timestamp
 from tests.helper.helper import validate_uuid4
 from things_report_archive_service.service import ThingsReportArchiveService

@@ -6,19 +6,11 @@ from typing import Any
 from urllib.parse import urlparse, parse_qs, ParseResult
 
 from config import get_logger, THINGS_REPORT_JOB_BUCKET_NAME
-from tests.config import THINGS_REPORT_JOB_FILE_PATH_PREFIX, QUEUE_WAIT_SECONDS
-from util.s3_util import isodate_to_timestamp, create_presigned_url
+from tests.config import QUEUE_WAIT_SECONDS
+from util.s3_util import create_presigned_url
 from tests.helper.helper import validate_uuid4
-from things_report_archive_service.service import ThingsReportArchiveService
 
 log = get_logger()
-
-# [sqs.Message(queue_url='https://sqs.eu-west-2.amazonaws.com/123456789012/event-queue.fifo', receipt_handle='mmcsqmaybbqkdnlvrvqkdfnnufqfyatkhesudwwfjzkzhpuvelkpolrfwhtiqfvetctbhfabvkbpukildzzylcanzhwahdylybmmpvhkpbgwtfihtjmziyndgydhokjefqkxutnpasexhpuqcaffybiejrorwdeupcqlyurvlcjeojbhjkoyuthtw')]
-# def create_event_message():
-#     return [sqs.Message(
-#         queue_url='https://sqs.eu-west-2.amazonaws.com/123456789012/event-queue.fifo',
-#         receipt_handle='mmcsqmaybbqkdnlvrvqkdfnnufqfyatkhesudwwfjzkzhpuvelkpolrfwhtiqfvetctbhfabvkbpukildzzylcanzhwahdylybmmpvhkpbgwtfihtjmziyndgydhokjefqkxutnpasexhpuqcaffybiejrorwdeupcqlyurvlcjeojbhjkoyuthtw'
-# )]
 
 
 def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
@@ -46,35 +38,6 @@ def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
     log.info(f"TEST EVENT CONSUMER messages: {messages=}")
 
     return messages
-
-
-# def assert_event_message(actual_result: dict, expected_result: dict) -> None:
-#     assert validate_uuid4(actual_result["Id"])
-#     assert validate_uuid4(expected_result["Id"])
-#     assert actual_result["Id"] != expected_result["Id"]
-#
-#     assert actual_result["UserId"] == expected_result["UserId"]
-#     assert actual_result["ReportName"] == expected_result["ReportName"]
-#     assert actual_result["JobPath"] == expected_result["JobPath"]
-#     assert actual_result["JobUploadPath"] == expected_result["JobUploadPath"]
-
-
-# def create_event_message(
-#     report_name: str,
-#     report_type: str,
-#     report_event: str,
-# ):
-#     return {
-#         "Id": "",
-#         "Name": report_name,
-#         "Type": report_type,
-#         "Event": report_event,
-#         "Description": "",
-#         "Value": "",
-#         "Read": "False",
-#     }
-
-# 'https://my-bucket.s3.amazonaws.com/a9f33d36-ad63-4129-88bf-a8818996d224/report_name_0-1592654400-1592913600.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=FOOBARKEY%2F20240527%2Feu-west-2%2Fs3%2Faws4_request&X-Amz-Date=20240527T212421Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Security-Token=testing&X-Amz-Signature=d75926a8fad9ae654a9f942e5bb15ac157a247128e75a0454e5a887fb7b155f8'
 
 
 def create_event_message(
@@ -180,48 +143,3 @@ def assert_event_message(actual_result, expected_result):
     assert message_body["Description"] == expected_result["Description"]
 
     assert_url(message_body["Value"], expected_result["Value"])
-
-    # assert message_body["Value"] == expected_result.Value
-    # ("https://my-bucket.s3.amazonaws.com/a9f33d36-ad63-4129-88bf-a8818996d224/report_name_0-1592654400-1592913600.zip?"
-    #  "X-Amz-Algorithm=AWS4-HMAC-SHA256&"
-    #  "X-Amz-Credential=FOOBARKEY%2F20240527%2Feu-west-2%2Fs3%2Faws4_request&"
-    #  "X-Amz-Date=20240527T215727Z&"
-    #  "X-Amz-Expires=3600&"
-    #  "X-Amz-SignedHeaders=host&"
-    #  "X-Amz-Security-Token=testing&"
-    #  "X-Amz-Signature=d36b2928ae6dd6c40d45b5d630b8e03e635ea9e035f4061b61c4a435009bb084"
-    #  "")
-    #     assert (
-    #         "https://my-bucket.s3.amazonaws.com/a9f33d36-ad63-4129-88bf-a8818996d224/report_name_0-1592654400"
-    #         "-1592913600.zip"
-    #     ) in message_body["Value"]
-
-    # actual_parsed_url = urlparse(message_body["Value"])
-    # expected_parsed_url = urlparse(message_body["Value"])
-
-    # assert len(actual_parsed_url) == 6
-    #
-    # assert get_uri(message_body["Value"]) == get_uri(expected_result["Value"])
-
-    # assert_querystring_value(actual_parsed_url, expected_parsed_url, "X-Amz-Algorithm", 0)
-    # assert_querystring_value(actual_parsed_url, expected_parsed_url, "X-Amz-Algorithm", 0)
-    # assert parsed_url.scheme == "http"
-
-    # x_amz_algorithm = parse_qs(parsed_url.query)["X-Amz-Algorithm"][0]
-    # log.info(f"{x_amz_algorithm=}")
-    # x_amz_credential = parse_qs(parsed_url.query)["X-Amz-Credential"][1]
-    # x_amz_date = parse_qs(parsed_url.query)["X-Amz-Date"][2]
-    # x_amz_expires = parse_qs(parsed_url.query)["X-Amz-Expires"][3]
-    # x_amz_signedheaders = parse_qs(parsed_url.query)["X-Amz-SignedHeaders"][4]
-    # x_amz_security_token = parse_qs(parsed_url.query)["X-Amz-Security-Token"][5]
-    # x_amz_signature = parse_qs(parsed_url.query)["X-Amz-Signature"][6]
-
-    # assert "X-Amz-Algorithm=AWS4-HMAC-SHA256" in message_body["Value"]
-    # # assert "X-Amz-Algorithm=AWS4-HMAC-SHA256" in message_body["Value"]
-    # assert "X-Amz-Credential=FOOBARKEY%2F20240527%2Feu-west-2%2Fs3%2Faws4_request" in message_body["Value"]
-    # assert "X-Amz-Date=20240527T212421Z" in message_body["Value"]
-    # assert "X-Amz-Expires=3600" in message_body["Value"]
-
-    # assert message_body["Read"] == expected_result["Read"]
-
-    # actual_result.receipt_handle = expected_result.receipt_handle

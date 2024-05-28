@@ -1,11 +1,8 @@
-import datetime
-import json
 import uuid
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch
 
 import boto3
 import pytest
-from dateutil.tz import tzutc
 
 from config import (
     THINGS_REPORT_JOB_FILE_PATH_PREFIX,
@@ -14,17 +11,13 @@ from config import (
     get_logger,
     AWS_REGION,
     THINGS_EVENT_QUEUE,
-    QUEUE_WAIT_SECONDS,
 )
 
 # from helper.event_helper import event_consumer
 from tests.helper import helper, archive_job_helper, event_helper
-from util import service_util
 from util.s3_util import (
     s3_list_job_files,
     s3_download_job_files,
-    s3_filter_csv_file,
-    upload_zip_file,
     upload_zip_file,
 )
 from util.service_util import EVENT_SUCCESS
@@ -88,18 +81,21 @@ class TestArchiveConsumer:
             archive_service,
     ):
         mock_s3_list_job_files.return_value = self.s3_contents
-        mock_s3_download_job_files.return_value = (self.path_prefix, self.archived_path_suffix)
+        mock_s3_download_job_files.return_value = (
+            self.path_prefix,
+            self.archived_path_suffix
+        )
         mock_upload_zip_file.return_value = True
 
         report_archive_queue, _ = helper.create_sqs_queue(
-            THINGS_REPORT_ARCHIVE_QUEUE, THINGS_REPORT_ARCHIVE_DLQ
+            THINGS_REPORT_ARCHIVE_QUEUE,
+            THINGS_REPORT_ARCHIVE_DLQ
         )
-        sqs = boto3.resource("sqs", region_name=AWS_REGION)
-        queue_attributes = {
-            "WaitSeconds": f"{QUEUE_WAIT_SECONDS}",
-        }
+        # sqs = boto3.resource("sqs", region_name=AWS_REGION)
+        # queue_attributes = {
+        #     "WaitSeconds": f"{QUEUE_WAIT_SECONDS}",
+        # }
         event_queue, _ = helper.create_sqs_queue(THINGS_EVENT_QUEUE)
-        # report_archive_topic = helper.create_sns_topic("archive-topic")
 
         expected_archive_message = archive_job_helper.create_archive_job_message(
             self.message_id,
@@ -113,29 +109,6 @@ class TestArchiveConsumer:
         report_archive_queue.send_messages(Entries=[expected_archive_message])
         archive_job_helper.service_poll(archive_service, 10)
 
-        # expected_event_message = event_helper.create_event_message(
-        #     name=self.report_name,
-        #     date=self.start_timestamp,
-        #     event="REPORT_ARCHIVE_SUCCESSFUL"
-        # )
-        # report_archive_queue.send_messages(Entries=[expected_archive_message])
-
-        # event_queue, _ = helper.create_sqs_queue(THINGS_EVENT_QUEUE)
-
-        # expected_messages = [sqs.Message(queue_url='https://sqs.eu-west-2.amazonaws.com/123456789012/event-queue.fifo', receipt_handle='ykamjmogrfjlhgfujxfvassjzzmtlevktizkiuvplcoagwdjidlbcxrmjaoncikfmexrhexubwfsmwqvvhvnukmqwieanyljxxznqxydpyqghqwzaromvzqhtbxlzxhbrlqkryrrbmekwyxcnvhwhpdlhdwylifnzbqnsgngdrrrjssclprmforgr')]
-
-        actual_event_messages = event_helper.event_consumer(
-            event_queue, 10
-        )
-
-        log.info(f"*** TEST actual_event_messages {actual_event_messages=}")
-
-        # expected_result = event_helper.create_event_message(
-        #     report_name=self.report_name,
-        #     report_type="",
-        #     report_event="",
-        # )
-
         expected_result = event_helper.create_event_message(
             s3_client=archive_service.s3_client,
             name=self.report_name,
@@ -144,15 +117,11 @@ class TestArchiveConsumer:
             job_upload_path=self.job_upload_path
         )
 
+        actual_event_messages = event_helper.event_consumer(
+            event_queue, 10
+        )
+
         event_helper.assert_event_message(actual_event_messages[0], expected_result)
-        # assert actual_event_messages == expected_messages
-        # actual_archive_messages = report_archive_job_consumer(
-        #     report_archive_queue, 40
-        # )
-        #
-        # log.info(f"{actual_archive_messages=}")
-        # # actual_archive_job_messages
-        # assert actual_archive_messages == [expected_archive_message]
 
     @pytest.mark.skip(reason="requires real aws credentials")
     class TestArchiveConsumerWithRealAwsCredentials:
@@ -180,13 +149,21 @@ class TestArchiveConsumer:
             assert actual_result == expected_result
 
         def test_s3_download_job_csv_files(self):
-            path_prefix, archived = s3_download_job_files(self.s3_client, self.filtered_csvs)
+            path_prefix, archived = s3_download_job_files(
+                self.s3_client,
+                self.filtered_csvs
+            )
 
             assert path_prefix == self.path_prefix
-            assert archived.endswith(self.archived_path_suffix) is True
+            assert archived.endswith(
+                self.archived_path_suffix
+            ) is True
 
         def test_s3_upload_zip(self):
-            path_prefix, archived = s3_download_job_files(self.s3_client, self.filtered_csvs)
+            path_prefix, archived = s3_download_job_files(
+                self.s3_client,
+                self.filtered_csvs
+            )
 
             actual_result = upload_zip_file(self.s3_client, archived, path_prefix)
 
