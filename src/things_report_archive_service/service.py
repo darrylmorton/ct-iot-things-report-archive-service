@@ -70,22 +70,11 @@ class ThingsReportArchiveService:
             upload_zip_file(self.s3_client, path_prefix, archived)
             event = EVENT_SUCCESS
 
-        # TODO create message complete structure via util...
-        # event_message = json.dumps({
-        #     "Id": str(message_id),
-        #     "Name": report_name,
-        #     "Date": timestamp,
-        #     "Type": EVENT_TYPE,
-        #     "Event": event,
-        #     "Description": "Report Archive Job Event",
-        #     "Value": f"{presigned_url}",
-        #     "Read": f"{uploaded}",
-        # })
-
         event_message = create_event_message(
             s3_client=self.s3_client,
             name=report_name,
             event=event,
+            message="Successfully uploaded archive job file",
             job_upload_path=job_upload_path,
         )
         log.info(f"{event_message=}")

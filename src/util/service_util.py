@@ -17,7 +17,7 @@ EVENT_ERROR = "archive error"
 
 
 def create_event_message(
-    s3_client: Any, name: str, event: str, job_upload_path: str
+    s3_client: Any, name: str, event: str, message: str, job_upload_path: str
 ) -> dict:
     message_id = str(uuid.uuid4())
     timestamp = datetime.now(tz=timezone.utc).isoformat()
@@ -61,6 +61,10 @@ def create_event_message(
                 "DataType": "String",
                 "StringValue": description,
             },
+            "Message": {
+                "DataType": "String",
+                "StringValue": message,
+            },
             "Value": {
                 "DataType": "String",
                 "StringValue": presigned_url,
@@ -77,6 +81,7 @@ def create_event_message(
             "Type": event_type,
             "Event": event,
             "Description": description,
+            "Message": message,
             "Value": presigned_url,
             "Read": read,
         }),

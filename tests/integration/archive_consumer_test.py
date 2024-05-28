@@ -19,6 +19,7 @@ from config import (
 
 # from helper.event_helper import event_consumer
 from tests.helper import helper, archive_job_helper, event_helper
+from util import service_util
 from util.s3_util import (
     s3_list_job_files,
     s3_download_job_files,
@@ -26,6 +27,7 @@ from util.s3_util import (
     upload_zip_file,
     upload_zip_file,
 )
+from util.service_util import EVENT_SUCCESS
 from util.util import isodate_to_timestamp
 
 log = get_logger()
@@ -121,7 +123,7 @@ class TestArchiveConsumer:
 
         # event_queue, _ = helper.create_sqs_queue(THINGS_EVENT_QUEUE)
 
-        expected_messages = [sqs.Message(queue_url='https://sqs.eu-west-2.amazonaws.com/123456789012/event-queue.fifo', receipt_handle='ykamjmogrfjlhgfujxfvassjzzmtlevktizkiuvplcoagwdjidlbcxrmjaoncikfmexrhexubwfsmwqvvhvnukmqwieanyljxxznqxydpyqghqwzaromvzqhtbxlzxhbrlqkryrrbmekwyxcnvhwhpdlhdwylifnzbqnsgngdrrrjssclprmforgr')]
+        # expected_messages = [sqs.Message(queue_url='https://sqs.eu-west-2.amazonaws.com/123456789012/event-queue.fifo', receipt_handle='ykamjmogrfjlhgfujxfvassjzzmtlevktizkiuvplcoagwdjidlbcxrmjaoncikfmexrhexubwfsmwqvvhvnukmqwieanyljxxznqxydpyqghqwzaromvzqhtbxlzxhbrlqkryrrbmekwyxcnvhwhpdlhdwylifnzbqnsgngdrrrjssclprmforgr')]
 
         actual_event_messages = await event_helper.event_consumer(
             event_queue, 10
@@ -129,7 +131,22 @@ class TestArchiveConsumer:
 
         log.info(f"*** TEST actual_event_messages {actual_event_messages=}")
 
-        assert actual_event_messages == expected_messages
+        # expected_result = event_helper.create_event_message(
+        #     report_name=self.report_name,
+        #     report_type="",
+        #     report_event="",
+        # )
+
+        expected_result = event_helper.create_event_message(
+            s3_client=archive_service.s3_client,
+            name=self.report_name,
+            event=EVENT_SUCCESS,
+            message="Successfully uploaded archive job file",
+            job_upload_path=self.job_upload_path
+        )
+
+        event_helper.assert_event_message(actual_event_messages[0], expected_result)
+        # assert actual_event_messages == expected_messages
         # actual_archive_messages = report_archive_job_consumer(
         #     report_archive_queue, 40
         # )

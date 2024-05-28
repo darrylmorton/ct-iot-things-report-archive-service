@@ -7,6 +7,7 @@ from config import (
     THINGS_REPORT_JOB_FILE_PATH_PREFIX,
     THINGS_REPORT_JOB_BUCKET_NAME,
     get_logger,
+    THINGS_REPORT_ARCHIVE_EXPIRATION,
 )
 from util.util import isodate_to_timestamp
 
@@ -129,13 +130,12 @@ def upload_zip_file(s3_client, file_path, upload_path) -> bool:
         return uploaded
 
 
-def create_presigned_url(s3_client, bucket_name, object_name, expiration=3600):
+def create_presigned_url(s3_client, bucket_name, object_name):
     """Generate a presigned URL to share an S3 object
 
     :param s3_client: BaseClient for S3 service
     :param bucket_name: string
     :param object_name: string
-    :param expiration: Time in seconds for the presigned URL to remain valid
     :return: Presigned URL as string. If error, returns None.
     """
 
@@ -145,7 +145,7 @@ def create_presigned_url(s3_client, bucket_name, object_name, expiration=3600):
         response = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket_name, "Key": object_name},
-            ExpiresIn=expiration,
+            ExpiresIn=THINGS_REPORT_ARCHIVE_EXPIRATION,
         )
 
     except ClientError as e:
