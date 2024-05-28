@@ -13,7 +13,6 @@ from config import (
     THINGS_EVENT_QUEUE,
 )
 
-# from helper.event_helper import event_consumer
 from tests.helper import helper, archive_job_helper, event_helper
 from util.s3_util import (
     s3_list_job_files,
@@ -91,10 +90,6 @@ class TestArchiveConsumer:
             THINGS_REPORT_ARCHIVE_QUEUE,
             THINGS_REPORT_ARCHIVE_DLQ
         )
-        # sqs = boto3.resource("sqs", region_name=AWS_REGION)
-        # queue_attributes = {
-        #     "WaitSeconds": f"{QUEUE_WAIT_SECONDS}",
-        # }
         event_queue, _ = helper.create_sqs_queue(THINGS_EVENT_QUEUE)
 
         expected_archive_message = archive_job_helper.create_archive_job_message(
@@ -104,7 +99,6 @@ class TestArchiveConsumer:
             self.job_path,
             self.job_upload_path
         )
-        log.info(f"*** TEST expected_archive_message {expected_archive_message=}")
 
         report_archive_queue.send_messages(Entries=[expected_archive_message])
         archive_job_helper.service_poll(archive_service, 10)
