@@ -75,13 +75,12 @@ class TestArchiveConsumer:
         ]
     }
 
-    # TODO add SNS as the output, also will enable testing from end to end such as the other services...
     # uploading disabled
     @patch("things_report_archive_service.service.s3_list_job_files")
     @patch("things_report_archive_service.service.s3_download_job_files")
     @patch("things_report_archive_service.service.upload_zip_file")
     # @pytest.mark.skip(reason="requires real aws credentials")
-    async def test_archive_consumer(
+    def test_archive_consumer(
             self,
             mock_s3_list_job_files,
             mock_s3_download_job_files,
@@ -112,7 +111,7 @@ class TestArchiveConsumer:
         log.info(f"*** TEST expected_archive_message {expected_archive_message=}")
 
         report_archive_queue.send_messages(Entries=[expected_archive_message])
-        await archive_job_helper.service_poll(archive_service, 10)
+        archive_job_helper.service_poll(archive_service, 10)
 
         # expected_event_message = event_helper.create_event_message(
         #     name=self.report_name,
@@ -125,7 +124,7 @@ class TestArchiveConsumer:
 
         # expected_messages = [sqs.Message(queue_url='https://sqs.eu-west-2.amazonaws.com/123456789012/event-queue.fifo', receipt_handle='ykamjmogrfjlhgfujxfvassjzzmtlevktizkiuvplcoagwdjidlbcxrmjaoncikfmexrhexubwfsmwqvvhvnukmqwieanyljxxznqxydpyqghqwzaromvzqhtbxlzxhbrlqkryrrbmekwyxcnvhwhpdlhdwylifnzbqnsgngdrrrjssclprmforgr')]
 
-        actual_event_messages = await event_helper.event_consumer(
+        actual_event_messages = event_helper.event_consumer(
             event_queue, 10
         )
 

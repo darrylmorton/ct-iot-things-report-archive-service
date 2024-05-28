@@ -1,6 +1,7 @@
 import os
 import shutil
 
+from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
 from config import (
@@ -130,27 +131,27 @@ def upload_zip_file(s3_client, file_path, upload_path) -> bool:
         return uploaded
 
 
-def create_presigned_url(s3_client, bucket_name, object_name):
+def create_presigned_url(
+    s3_client: BaseClient, bucket_name: str, object_name: str
+) -> str:
     """Generate a presigned URL to share an S3 object
 
     :param s3_client: BaseClient for S3 service
-    :param bucket_name: string
-    :param object_name: string
+    :param bucket_name
+    :param object_name
     :return: Presigned URL as string. If error, returns None.
     """
 
-    # Generate a presigned URL for the S3 object
-    # s3_client = boto3.client('s3')
+    presigned_url = ""
+
     try:
-        response = s3_client.generate_presigned_url(
+        presigned_url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket_name, "Key": object_name},
             ExpiresIn=THINGS_REPORT_ARCHIVE_EXPIRATION,
         )
 
-    except ClientError as e:
-        log.error(e)
-        return None
-
-    # The response contains the presigned URL
-    return response
+    except ClientError as error:
+        log.error(f"create_presigned_url error {error}")
+    finally:
+        return presigned_url

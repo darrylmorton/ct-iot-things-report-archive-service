@@ -80,9 +80,7 @@ def expected_archive_job_message(message: dict) -> list[dict]:
     ]
 
 
-async def service_poll(
-    job_service: ThingsReportArchiveService, timeout_seconds=0
-) -> None:
+def service_poll(job_service: ThingsReportArchiveService, timeout_seconds=0) -> None:
     log.debug("Polling...")
 
     timeout = time.time() + timeout_seconds
@@ -92,7 +90,7 @@ async def service_poll(
             log.info(f"Task timed out after {timeout_seconds}")
             break
         else:
-            await job_service.consume()
+            job_service.consume()
 
 
 # def report_archive_job_consumer(

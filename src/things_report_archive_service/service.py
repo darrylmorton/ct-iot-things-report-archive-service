@@ -26,7 +26,7 @@ log = get_logger()
 
 class ThingsReportArchiveService:
     def __init__(self):
-        log.info("initializing ThingsReportArchiveService...")
+        log.debug("initializing ThingsReportArchiveService...")
 
         self.sqs = boto3.resource("sqs", region_name=AWS_REGION)
         self.s3_client = boto3.client("s3", region_name=AWS_REGION)
@@ -39,7 +39,7 @@ class ThingsReportArchiveService:
         self.event_queue = self.sqs.Queue(f"{THINGS_EVENT_QUEUE}.fifo")
 
     #
-    async def _process_message(self, message_body: dict) -> None:
+    def _process_message(self, message_body: dict) -> None:
         log.debug("Processing archive job message...")
 
         report_name = message_body["ReportName"]
@@ -79,7 +79,7 @@ class ThingsReportArchiveService:
         )
         log.info(f"{event_message=}")
 
-        await self.produce([event_message])
+        self.produce([event_message])
 
         # TODO decide what to return, unit testing this function for consideration...
         # return [event_message]
@@ -103,13 +103,13 @@ class ThingsReportArchiveService:
         #     response_body,
         # )
 
-    async def poll(self) -> None:
+    def poll(self) -> None:
         log.info("Polling for archive job messages...")
 
         while True:
-            await self.consume()
+            self.consume()
 
-    async def consume(self) -> None:
+    def consume(self) -> None:
         log.info("Consuming archive job messages...")
 
         try:
@@ -126,7 +126,7 @@ class ThingsReportArchiveService:
 
                     archive_job_message.delete()
 
-                    await self._process_message(message_body)
+                    self._process_message(message_body)
 
         except ClientError as error:
             log.error(
@@ -169,7 +169,7 @@ class ThingsReportArchiveService:
     #
     #         raise error
 
-    async def produce(self, event_messages: list[dict]) -> list[dict]:
+    def produce(self, event_messages: list[dict]) -> list[dict]:
         log.info(f"Sending event message...{event_messages=}")
 
         try:

@@ -5,8 +5,6 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse, parse_qs, ParseResult
 
-from moto import sqs
-
 from config import get_logger, THINGS_REPORT_JOB_BUCKET_NAME
 from tests.config import THINGS_REPORT_JOB_FILE_PATH_PREFIX, QUEUE_WAIT_SECONDS
 from util.s3_util import isodate_to_timestamp, create_presigned_url
@@ -23,7 +21,7 @@ log = get_logger()
 # )]
 
 
-async def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
+def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
     timeout = time.time() + timeout_seconds
     messages = []
 
