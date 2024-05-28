@@ -26,7 +26,6 @@ def create_event_message(
         object_name=f"{job_upload_path}.zip",
         s3_client=s3_client,
     )
-    log.info(f"presigned_url {presigned_url=}")
 
     event_type = "notification"
     description = "Report Archive Notification"

@@ -39,78 +39,52 @@ class ThingsReportArchiveService:
         self.event_queue = self.sqs.Queue(f"{THINGS_EVENT_QUEUE}.fifo")
 
     #
-    def _process_message(self, message_body: dict) -> None:
+    def _process_message(self, message_body: dict) -> bool:
         log.debug("Processing archive job message...")
 
         report_name = message_body["ReportName"]
-        user_id = message_body["UserId"]
-        job_path = message_body["JobPath"]
         job_upload_path = message_body["JobUploadPath"]
 
-        log.info(f"{report_name=}")
-        log.info(f"{user_id=}")
-        log.info(f"{job_path=}")
-        log.info(f"{job_upload_path=}")
-
         csv_files = s3_list_job_files(self.s3_client)
-        log.info(f"{csv_files=}")
 
-        # if len(csv_files) == 0:
-        #     # TODO handle...
-        #     pass
+        if not csv_files:
+            event_message = create_event_message(
+                s3_client=self.s3_client,
+                name=report_name,
+                event=EVENT_ERROR,
+                message="There are no csv jobs to generate an archive job file",
+                job_upload_path=job_upload_path,
+            )
+
+            self.produce([event_message])
+
+            return False
 
         path_prefix, archived = s3_download_job_files(self.s3_client, csv_files)
 
-        log.info(f"*** _process_message {path_prefix=} {archived=}")
-
-        # uploaded = False
-        event = EVENT_ERROR
-
         if path_prefix and archived:
             upload_zip_file(self.s3_client, path_prefix, archived)
-            event = EVENT_SUCCESS
 
         event_message = create_event_message(
             s3_client=self.s3_client,
             name=report_name,
-            event=event,
+            event=EVENT_SUCCESS,
             message="Successfully uploaded archive job file",
             job_upload_path=job_upload_path,
         )
-        log.info(f"{event_message=}")
 
         self.produce([event_message])
 
-        # TODO decide what to return, unit testing this function for consideration...
-        # return [event_message]
-
-        # TODO handling conditions???
-
-        # bucket_files = self.s3_client.list_objects_v2(
-        #     Bucket=THINGS_REPORT_JOB_BUCKET_NAME
-        # )
-        # log.info(f"{bucket_files=}")
-        # request bucket contents for *.csv (debug)
-        # create zip file
-        # upload zip file to bucket
-        #
-        # await self.upload_zip_job(
-        #     user_id,
-        #     report_name,
-        #     job_index,
-        #     start_timestamp,
-        #     end_timestamp,
-        #     response_body,
-        # )
+        return True
 
     def poll(self) -> None:
-        log.info("Polling for archive job messages...")
+        log.debug("Polling for archive job messages...")
 
         while True:
             self.consume()
 
     def consume(self) -> None:
-        log.info("Consuming archive job messages...")
+        log.debug("Consuming archive job messages...")
 
         try:
             archive_job_messages = self.report_archive_job_queue.receive_messages(
@@ -118,7 +92,6 @@ class ThingsReportArchiveService:
                 MaxNumberOfMessages=10,
                 WaitTimeSeconds=QUEUE_WAIT_SECONDS,
             )
-            log.info(f"*** CONSUME {archive_job_messages=}")
 
             if len(archive_job_messages) > 0:
                 for archive_job_message in archive_job_messages:
@@ -135,42 +108,8 @@ class ThingsReportArchiveService:
 
             raise error
 
-    # async def download_job_files(self) -> None:
-    #     pass
-
-    # async def upload_zip_job(
-    #     self,
-    #     user_id: str,
-    #     report_name: str,
-    #     job_index: int,
-    #     start_timestamp: str,
-    #     end_timestamp: str,
-    # ) -> None:
-    #     log.debug("Uploading job csv file...")
-    #
-    #     report_job_file_path, report_job_upload_path, report_job_filename = (
-    #         create_zip_report_job_path(
-    #             user_id,
-    #             report_name,
-    #             job_index,
-    #             start_timestamp,
-    #             end_timestamp,
-    #         )
-    #     )
-    #
-    #     try:
-    #         s3_upload_zip(
-    #             self.s3_client,
-    #             f"{report_job_file_path}/{report_job_filename}",
-    #             f"{report_job_upload_path}/{report_job_filename}",
-    #         )
-    #     except ClientError as error:
-    #         log.error(f"S3 client upload error: {error}")
-    #
-    #         raise error
-
     def produce(self, event_messages: list[dict]) -> list[dict]:
-        log.info(f"Sending event message...{event_messages=}")
+        log.debug(f"Sending event message...")
 
         try:
             if len(event_messages) > 0:

@@ -17,27 +17,17 @@ log = get_logger()
 
 def s3_list_job_files(s3_client) -> list[dict]:
     response = s3_client.list_objects_v2(Bucket=THINGS_REPORT_JOB_BUCKET_NAME)
-    log.info(f"{response=}")
 
-    result = s3_filter_csv_file(response["Contents"])
-    log.info(f"{result=}")
-
-    return result
+    return s3_filter_csv_file(response["Contents"])
 
 
 def s3_filter_csv_file(s3_contents: list[dict]) -> list[dict]:
     csv_files = []
-    log.info(f"{s3_contents=}")
 
     for s3_content in s3_contents:
-        log.info(f"{s3_content=}")
-
         content = s3_content["Key"]
-        log.info(f"{content=}")
 
         if content.endswith(".csv"):
-            # create dir path
-            # create filename
             content_split = content.rsplit("/", 1)
 
             file_metadata = {

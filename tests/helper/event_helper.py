@@ -29,13 +29,9 @@ def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
         )
 
         for event_message in event_messages:
-            log.info(f"TEST EVENT CONSUMER event_message: {event_message=}")
-
             messages.append(event_message)
 
             event_message.delete()
-
-    log.info(f"TEST EVENT CONSUMER messages: {messages=}")
 
     return messages
 
@@ -46,13 +42,11 @@ def create_event_message(
     message_id = str(uuid.uuid4())
     timestamp = datetime.now(tz=timezone.utc).isoformat()
 
-    # TODO move and pass into function
     presigned_url = create_presigned_url(
         bucket_name=THINGS_REPORT_JOB_BUCKET_NAME,
         object_name=f"{job_upload_path}.zip",
         s3_client=s3_client,
     )
-    log.info(f"presigned_url {presigned_url=}")
 
     event_type = "notification"
     description = "Report Archive Notification"
@@ -73,7 +67,6 @@ def create_event_message(
 
 def get_uri(url: str) -> str:
     index = url.find("?")
-    log.info(f"GET URI ? INDEX {index=}")
 
     return url[0:index]
 
@@ -130,9 +123,6 @@ def assert_url(actual_url, expected_url):
 
 def assert_event_message(actual_result, expected_result):
     message_body = json.loads(actual_result.body)
-    log.info(f"{expected_result=}")
-
-    log.info(f"{message_body=}")
 
     assert validate_uuid4(message_body["Id"]) is True
     assert message_body["Name"] == expected_result["Name"]

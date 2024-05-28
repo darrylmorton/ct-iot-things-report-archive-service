@@ -7,7 +7,6 @@ from tests.config import THINGS_REPORT_JOB_FILE_PATH_PREFIX
 from util.s3_util import isodate_to_timestamp
 from tests.helper.helper import validate_uuid4
 from things_report_archive_service.service import ThingsReportArchiveService
-# from util.service_util import create_archive_job_message
 
 log = get_logger()
 
@@ -90,35 +89,6 @@ def service_poll(job_service: ThingsReportArchiveService, timeout_seconds=0) -> 
             break
         else:
             job_service.consume()
-
-
-# def report_archive_job_consumer(
-#     report_archive_job_queue: Any, timeout_seconds=0
-# ) -> list[dict]:
-#     timeout = time.time() + timeout_seconds
-#     messages = []
-#
-#     while True:
-#         if time.time() > timeout:
-#             log.info(f"Task timed out after {timeout_seconds}")
-#             break
-#
-#         archive_job_messages = report_archive_job_queue.receive_messages(
-#             MessageAttributeNames=["All"],
-#             MaxNumberOfMessages=10,
-#             WaitTimeSeconds=QUEUE_WAIT_SECONDS,
-#         )
-#
-#         for archive_job_message in archive_job_messages:
-#             log.info(f"TEST CONSUMER archive_job_message: {archive_job_message=}")
-#
-#             messages.append(archive_job_message)
-#
-#             archive_job_message.delete()
-#
-#     log.info(f"TEST CONSUMER message: {messages=}")
-#
-#     return messages
 
 
 def assert_archive_job_message(actual_result: dict, expected_result: dict) -> None:
