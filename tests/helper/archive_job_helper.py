@@ -102,9 +102,7 @@ def assert_archive_job_message(actual_result: dict, expected_result: dict) -> No
     assert actual_result["JobUploadPath"] == expected_result["JobUploadPath"]
 
 
-def assert_archive_job_messages(
-    actual_result: list[dict], expected_result: list[dict]
-) -> None:
+def assert_archive_job_messages(actual_result: list[dict], expected_result: list[dict]) -> None:
     assert len(actual_result) == len(expected_result)
 
     index = 0

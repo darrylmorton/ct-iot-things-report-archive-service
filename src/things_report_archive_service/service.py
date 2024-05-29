@@ -21,12 +21,8 @@ class ThingsReportArchiveService:
 
         self.sqs = boto3.resource("sqs", region_name=AWS_REGION)
         self.s3_client = boto3.client("s3", region_name=AWS_REGION)
-        self.report_archive_job_queue = self.sqs.Queue(
-            f"{THINGS_REPORT_ARCHIVE_QUEUE}.fifo"
-        )
-        self.report_archive_job_dlq = self.sqs.Queue(
-            f"{THINGS_REPORT_ARCHIVE_DLQ}.fifo"
-        )
+        self.report_archive_job_queue = self.sqs.Queue(f"{THINGS_REPORT_ARCHIVE_QUEUE}.fifo")
+        self.report_archive_job_dlq = self.sqs.Queue(f"{THINGS_REPORT_ARCHIVE_DLQ}.fifo")
         self.event_queue = self.sqs.Queue(f"{THINGS_EVENT_QUEUE}.fifo")
 
     #
@@ -36,10 +32,9 @@ class ThingsReportArchiveService:
         report_name = message_body["ReportName"]
         job_upload_path = message_body["JobUploadPath"]
 
-        csv_files2 = s3_util.s3_list_job_files(s3_client=self.s3_client)
-        log.info(f"{csv_files2}")
+        csv_files = s3_util.s3_list_job_files(s3_client=self.s3_client)
 
-        if not csv_files2:
+        if not csv_files:
             event_message = service_util.create_event_message(
                 s3_client=self.s3_client,
                 name=report_name,
@@ -50,19 +45,14 @@ class ThingsReportArchiveService:
 
             return self.produce([event_message])
 
-        log.info(f"0 HELLO")
-
-        path_prefix, archived = s3_util.s3_download_job_files(
-            self.s3_client, csv_files2
-        )
-        # uploaded2 = False
+        path_prefix, archived = s3_util.s3_download_job_files(self.s3_client, csv_files)
 
         if path_prefix and archived:
-            uploaded2 = s3_util.upload_zip_file(self.s3_client, path_prefix, archived)
+            uploaded = s3_util.upload_zip_file(self.s3_client, path_prefix, archived)
 
-            log.info(f"{uploaded2}")
+            log.info(f"{uploaded}")
 
-            if uploaded2:
+            if uploaded:
                 event_message = service_util.create_event_message(
                     s3_client=self.s3_client,
                     name=report_name,
@@ -108,9 +98,7 @@ class ThingsReportArchiveService:
                     self._process_message(message_body)
 
         except ClientError as error:
-            log.error(
-                f"Couldn't receive report_archive_job_queue messages error {error}"
-            )
+            log.error(f"Couldn't receive report_archive_job_queue messages error {error}")
 
             raise error
 

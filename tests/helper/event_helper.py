@@ -36,9 +36,7 @@ def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
     return messages
 
 
-def create_event_message(
-    s3_client: Any, name: str, event: str, message: str, job_upload_path: str
-):
+def create_event_message(s3_client: Any, name: str, event: str, message: str, job_upload_path: str):
     message_id = str(uuid.uuid4())
     timestamp = datetime.now(tz=timezone.utc).isoformat()
 
@@ -75,17 +73,11 @@ def get_querystring_value(url: ParseResult, key: str) -> str:
     return parse_qs(url.query)[key][0]
 
 
-def assert_querystring_value(
-    actual_url: ParseResult, expected_url: ParseResult, key: str
-):
-    assert get_querystring_value(actual_url, key) == get_querystring_value(
-        expected_url, key
-    )
+def assert_querystring_value(actual_url: ParseResult, expected_url: ParseResult, key: str):
+    assert get_querystring_value(actual_url, key) == get_querystring_value(expected_url, key)
 
 
-def assert_querystring_value_length(
-    actual_url: ParseResult, expected_url: ParseResult, key: str
-):
+def assert_querystring_value_length(actual_url: ParseResult, expected_url: ParseResult, key: str):
     expected_result = get_querystring_value(expected_url, key)
     actual_result = get_querystring_value(actual_url, key)
 
@@ -100,32 +92,17 @@ def assert_url(actual_url, expected_url):
 
     assert len(actual_querystring) == 6
 
-    assert_querystring_value(
-        actual_querystring, expected_querystring, "X-Amz-Algorithm"
-    )
-    assert_querystring_value_length(
-        actual_querystring, expected_querystring, "X-Amz-Credential"
-    )
-    assert_querystring_value_length(
-        actual_querystring, expected_querystring, "X-Amz-Date"
-    )
+    assert_querystring_value(actual_querystring, expected_querystring, "X-Amz-Algorithm")
+    assert_querystring_value_length(actual_querystring, expected_querystring, "X-Amz-Credential")
+    assert_querystring_value_length(actual_querystring, expected_querystring, "X-Amz-Date")
     assert_querystring_value(actual_querystring, expected_querystring, "X-Amz-Expires")
-    assert_querystring_value(
-        actual_querystring, expected_querystring, "X-Amz-SignedHeaders"
-    )
-    assert_querystring_value(
-        actual_querystring, expected_querystring, "X-Amz-Security-Token"
-    )
-    assert_querystring_value_length(
-        actual_querystring, expected_querystring, "X-Amz-Signature"
-    )
+    assert_querystring_value(actual_querystring, expected_querystring, "X-Amz-SignedHeaders")
+    assert_querystring_value(actual_querystring, expected_querystring, "X-Amz-Security-Token")
+    assert_querystring_value_length(actual_querystring, expected_querystring, "X-Amz-Signature")
 
 
 def assert_event_message(actual_result, expected_result):
     message_body = json.loads(actual_result.body)
-
-    log.info(f"{message_body["Message"]=}")
-    log.info(f"{expected_result["Message"]=}")
 
     assert validate_uuid4(message_body["Id"]) is True
     assert message_body["Name"] == expected_result["Name"]

@@ -15,9 +15,7 @@ def create_sqs_queue(queue_name: str, dlq_name="") -> tuple[Any, Any]:
     dlq = None
 
     if dlq_name:
-        dlq = sqs.create_queue(
-            QueueName=f"{dlq_name}.fifo", Attributes=queue_attributes
-        )
+        dlq = sqs.create_queue(QueueName=f"{dlq_name}.fifo", Attributes=queue_attributes)
 
         dlq_policy = json.dumps({
             "deadLetterTargetArn": dlq.attributes["QueueArn"],
@@ -26,9 +24,7 @@ def create_sqs_queue(queue_name: str, dlq_name="") -> tuple[Any, Any]:
 
         queue_attributes["RedrivePolicy"] = dlq_policy
 
-    queue = sqs.create_queue(
-        QueueName=f"{queue_name}.fifo", Attributes=queue_attributes
-    )
+    queue = sqs.create_queue(QueueName=f"{queue_name}.fifo", Attributes=queue_attributes)
 
     return queue, dlq
 

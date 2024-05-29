@@ -59,9 +59,7 @@ def s3_download_job_files(s3_client, csv_files):
         if not os.path.exists(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}"):
             os.makedirs(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}")
 
-        write_file = open(
-            f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}/{filename}", "wb"
-        )
+        write_file = open(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}/{filename}", "wb")
 
         s3_client.download_fileobj(
             Bucket=THINGS_REPORT_JOB_BUCKET_NAME,
@@ -102,9 +100,7 @@ def create_zip_report_job_path(
 
 def upload_zip_file(s3_client, file_path, upload_path) -> bool:
     try:
-        s3_client.upload_file(
-            file_path, THINGS_REPORT_JOB_BUCKET_NAME, f"{upload_path}.zip"
-        )
+        s3_client.upload_file(file_path, THINGS_REPORT_JOB_BUCKET_NAME, f"{upload_path}.zip")
 
         return True
 
@@ -119,9 +115,7 @@ def upload_zip_file(s3_client, file_path, upload_path) -> bool:
         return False
 
 
-def create_presigned_url(
-    s3_client: BaseClient, bucket_name: str, object_name: str
-) -> str:
+def create_presigned_url(s3_client: BaseClient, bucket_name: str, object_name: str) -> str:
     """Generate a presigned URL to share an S3 object
 
     :param s3_client: BaseClient for S3 service
