@@ -6,6 +6,7 @@ import pytest
 
 import config
 
+import tests.config as test_config
 from tests.helper import helper, archive_job_helper, event_helper
 from util import service_util, s3_util, util
 
@@ -65,10 +66,10 @@ class TestArchiveConsumer:
                     mock_upload_zip_file.return_value = True
 
                     report_archive_queue, _ = helper.create_sqs_queue(
-                        config.THINGS_REPORT_ARCHIVE_QUEUE,
-                        config.THINGS_REPORT_ARCHIVE_DLQ
+                        test_config.THINGS_REPORT_ARCHIVE_QUEUE,
+                        test_config.THINGS_REPORT_ARCHIVE_DLQ
                     )
-                    event_queue, _ = helper.create_sqs_queue(config.THINGS_EVENT_QUEUE)
+                    event_queue, _ = helper.create_sqs_queue(test_config.THINGS_EVENT_QUEUE)
 
                     expected_archive_message = archive_job_helper.create_archive_job_message(
                         self.message_id,
@@ -104,10 +105,10 @@ class TestArchiveConsumer:
         mock_s3_list_job_files.return_value = []
 
         report_archive_queue, _ = helper.create_sqs_queue(
-            config.THINGS_REPORT_ARCHIVE_QUEUE,
-            config.THINGS_REPORT_ARCHIVE_DLQ
+            test_config.THINGS_REPORT_ARCHIVE_QUEUE,
+            test_config.THINGS_REPORT_ARCHIVE_DLQ
         )
-        event_queue, _ = helper.create_sqs_queue(config.THINGS_EVENT_QUEUE)
+        event_queue, _ = helper.create_sqs_queue(test_config.THINGS_EVENT_QUEUE)
 
         expected_archive_message = archive_job_helper.create_archive_job_message(
             self.message_id,
@@ -157,10 +158,10 @@ class TestArchiveConsumer:
                     mock_upload_zip_file.return_value = False
 
                     report_archive_queue, _ = helper.create_sqs_queue(
-                        config.THINGS_REPORT_ARCHIVE_QUEUE,
-                        config.THINGS_REPORT_ARCHIVE_DLQ
+                        test_config.THINGS_REPORT_ARCHIVE_QUEUE,
+                        test_config.THINGS_REPORT_ARCHIVE_DLQ
                     )
-                    event_queue, _ = helper.create_sqs_queue(config.THINGS_EVENT_QUEUE)
+                    event_queue, _ = helper.create_sqs_queue(test_config.THINGS_EVENT_QUEUE)
 
                     expected_archive_message = archive_job_helper.create_archive_job_message(
                         self.message_id,
@@ -195,7 +196,7 @@ class TestArchiveConsumer:
     @pytest.mark.skip(reason="requires real aws credentials")
     class TestArchiveConsumerWithRealAwsCredentials:
         user_id = "28ae898f-8a46-4bc1-a64e-c95709308315"
-        s3_client = boto3.client("s3", region_name=config.AWS_REGION)
+        s3_client = boto3.client("s3", region_name=test_config.AWS_REGION)
 
         path_prefix = f"{user_id}/report_name_0-1592654400-1592913600"
         filtered_csvs = [

@@ -5,10 +5,10 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse, parse_qs, ParseResult
 
-from config import get_logger, THINGS_REPORT_JOB_BUCKET_NAME
-from tests.config import QUEUE_WAIT_SECONDS
-from util.s3_util import create_presigned_url
-from tests.helper.helper import validate_uuid4
+from config import get_logger
+import tests.config as test_config
+from util import s3_util
+from tests.helper import helper
 
 log = get_logger()
 
@@ -25,7 +25,7 @@ def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
         event_messages = event_queue.receive_messages(
             MessageAttributeNames=["All"],
             MaxNumberOfMessages=10,
-            WaitTimeSeconds=QUEUE_WAIT_SECONDS,
+            WaitTimeSeconds=test_config.QUEUE_WAIT_SECONDS,
         )
 
         for event_message in event_messages:
@@ -40,8 +40,8 @@ def create_event_message(s3_client: Any, name: str, event: str, message: str, jo
     message_id = str(uuid.uuid4())
     timestamp = datetime.now(tz=timezone.utc).isoformat()
 
-    presigned_url = create_presigned_url(
-        bucket_name=THINGS_REPORT_JOB_BUCKET_NAME,
+    presigned_url = s3_util.create_presigned_url(
+        bucket_name=test_config.THINGS_REPORT_JOB_BUCKET_NAME,
         object_name=f"{job_upload_path}.zip",
         s3_client=s3_client,
     )
@@ -104,7 +104,7 @@ def assert_url(actual_url, expected_url):
 def assert_event_message(actual_result, expected_result):
     message_body = json.loads(actual_result.body)
 
-    assert validate_uuid4(message_body["Id"]) is True
+    assert helper.validate_uuid4(message_body["Id"]) is True
     assert message_body["Name"] == expected_result["Name"]
     assert len(message_body["Date"]) == len(expected_result["Date"])
     assert message_body["Type"] == expected_result["Type"]

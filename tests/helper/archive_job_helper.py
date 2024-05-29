@@ -2,13 +2,13 @@ import json
 import time
 import uuid
 
-from config import get_logger
-from tests.config import THINGS_REPORT_JOB_FILE_PATH_PREFIX
-from util.s3_util import isodate_to_timestamp
-from tests.helper.helper import validate_uuid4
-from things_report_archive_service.service import ThingsReportArchiveService
+import config
+import tests.config as test_config
+from util import s3_util
+from tests.helper import helper
+from things_report_archive_service import service
 
-log = get_logger()
+log = config.get_logger()
 
 
 def create_archive_job_message(
@@ -56,8 +56,8 @@ def create_archive_job_message(
 def expected_archive_job_message(message: dict) -> list[dict]:
     message_body = json.loads(message["MessageBody"])
 
-    start_timestamp = isodate_to_timestamp(message_body["StartTimestamp"])
-    end_timestamp = isodate_to_timestamp(message_body["EndTimestamp"])
+    start_timestamp = s3_util.isodate_to_timestamp(message_body["StartTimestamp"])
+    end_timestamp = s3_util.isodate_to_timestamp(message_body["EndTimestamp"])
 
     message_id = uuid.uuid4()
     job_path_prefix = f"{message_body["UserId"]}/{message_body["ReportName"]}"
@@ -65,7 +65,7 @@ def expected_archive_job_message(message: dict) -> list[dict]:
     job_path = f"{job_path_prefix}-{job_path_suffix}"
 
     job_upload_path = job_path
-    job_path = f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{job_path}"
+    job_path = f"{test_config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{job_path}"
 
     return [
         create_archive_job_message(
@@ -78,7 +78,7 @@ def expected_archive_job_message(message: dict) -> list[dict]:
     ]
 
 
-def service_poll(job_service: ThingsReportArchiveService, timeout_seconds=0) -> None:
+def service_poll(job_service: service.ThingsReportArchiveService, timeout_seconds=0) -> None:
     log.debug("Polling...")
 
     timeout = time.time() + timeout_seconds
@@ -92,8 +92,8 @@ def service_poll(job_service: ThingsReportArchiveService, timeout_seconds=0) -> 
 
 
 def assert_archive_job_message(actual_result: dict, expected_result: dict) -> None:
-    assert validate_uuid4(actual_result["Id"])
-    assert validate_uuid4(expected_result["Id"])
+    assert helper.validate_uuid4(actual_result["Id"])
+    assert helper.validate_uuid4(expected_result["Id"])
     assert actual_result["Id"] != expected_result["Id"]
 
     assert actual_result["UserId"] == expected_result["UserId"]

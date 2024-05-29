@@ -4,13 +4,13 @@ from typing import Any
 
 import boto3
 
-from config import AWS_REGION, QUEUE_WAIT_SECONDS
+import tests.config as test_config
 
 
 def create_sqs_queue(queue_name: str, dlq_name="") -> tuple[Any, Any]:
-    sqs = boto3.resource("sqs", region_name=AWS_REGION)
+    sqs = boto3.resource("sqs", region_name=test_config.AWS_REGION)
     queue_attributes = {
-        "WaitSeconds": f"{QUEUE_WAIT_SECONDS}",
+        "WaitSeconds": f"{test_config.QUEUE_WAIT_SECONDS}",
     }
     dlq = None
 

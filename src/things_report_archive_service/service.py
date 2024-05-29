@@ -50,8 +50,6 @@ class ThingsReportArchiveService:
         if path_prefix and archived:
             uploaded = s3_util.upload_zip_file(self.s3_client, path_prefix, archived)
 
-            log.info(f"{uploaded}")
-
             if uploaded:
                 event_message = service_util.create_event_message(
                     s3_client=self.s3_client,

@@ -1,8 +1,7 @@
 import os
+import dotenv
 
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=".env.test")
+dotenv.load_dotenv(dotenv_path=".env.test")
 
 
 AWS_REGION = os.environ.get("AWS_REGION")

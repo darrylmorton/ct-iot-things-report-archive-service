@@ -1,14 +1,13 @@
 import json
-import logging
 import uuid
 
 from datetime import datetime, timezone
-from botocore.client import BaseClient
+from botocore import client
 
-from config import THINGS_REPORT_JOB_BUCKET_NAME
-from util.s3_util import create_presigned_url
+import config
+from util import s3_util
 
-log = logging.getLogger("service_util")
+log = config.get_logger()
 
 EVENT_TYPE = "report_job_archive"
 EVENT_SUCCESS = "archive ready"
@@ -16,13 +15,13 @@ EVENT_ERROR = "archive error"
 
 
 def create_event_message(
-    s3_client: BaseClient, name: str, event: str, message: str, job_upload_path: str
+    s3_client: client.BaseClient, name: str, event: str, message: str, job_upload_path: str
 ) -> dict:
     message_id = str(uuid.uuid4())
     timestamp = datetime.now(tz=timezone.utc).isoformat()
 
-    presigned_url = create_presigned_url(
-        bucket_name=THINGS_REPORT_JOB_BUCKET_NAME,
+    presigned_url = s3_util.create_presigned_url(
+        bucket_name=config.THINGS_REPORT_JOB_BUCKET_NAME,
         object_name=f"{job_upload_path}.zip",
         s3_client=s3_client,
     )

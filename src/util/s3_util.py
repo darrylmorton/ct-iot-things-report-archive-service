@@ -1,22 +1,16 @@
 import os
 import shutil
 
-from botocore.client import BaseClient
-from botocore.exceptions import ClientError
+from botocore import client, exceptions
 
-from config import (
-    THINGS_REPORT_JOB_FILE_PATH_PREFIX,
-    THINGS_REPORT_JOB_BUCKET_NAME,
-    get_logger,
-    THINGS_REPORT_ARCHIVE_EXPIRATION,
-)
+import config
 from util.util import isodate_to_timestamp
 
-log = get_logger()
+log = config.get_logger()
 
 
-def s3_list_job_files(s3_client) -> list[dict]:
-    response = s3_client.list_objects_v2(Bucket=THINGS_REPORT_JOB_BUCKET_NAME)
+def s3_list_job_files(s3_client: client.BaseClient) -> list[dict]:
+    response = s3_client.list_objects_v2(Bucket=config.THINGS_REPORT_JOB_BUCKET_NAME)
 
     return s3_filter_csv_file(response["Contents"])
 
@@ -41,14 +35,14 @@ def s3_filter_csv_file(s3_contents: list[dict]) -> list[dict]:
 
 def create_zip_file(path_prefix: str) -> str:
     return shutil.make_archive(
-        f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}",
+        f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}",
         "zip",
-        f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}",
+        f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}",
     )
 
 
 # 'wb'
-def s3_download_job_files(s3_client, csv_files):
+def s3_download_job_files(s3_client: client.BaseClient, csv_files: list[dict]):
     path_prefix = ""
     archived = None
 
@@ -56,13 +50,15 @@ def s3_download_job_files(s3_client, csv_files):
         path_prefix = item["path_prefix"]
         filename = item["filename"]
 
-        if not os.path.exists(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}"):
-            os.makedirs(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}")
+        if not os.path.exists(f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}"):
+            os.makedirs(f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}")
 
-        write_file = open(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}/{filename}", "wb")
+        write_file = open(
+            f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{path_prefix}/{filename}", "wb"
+        )
 
         s3_client.download_fileobj(
-            Bucket=THINGS_REPORT_JOB_BUCKET_NAME,
+            Bucket=config.THINGS_REPORT_JOB_BUCKET_NAME,
             Key=f"{path_prefix}/{filename}",
             Fileobj=write_file,
         )
@@ -82,13 +78,13 @@ def s3_download_job_files(s3_client, csv_files):
 
 
 def create_zip_report_job_path(
-    user_id: str, report_name: str, job_index, start_timestamp: str, end_timestamp: str
+    user_id: str, report_name: str, job_index: int, start_timestamp: str, end_timestamp: str
 ) -> tuple[str, str, str]:
     start_timestamp = isodate_to_timestamp(start_timestamp)
     end_timestamp = isodate_to_timestamp(end_timestamp)
     # fmt: off
     report_job_file_path = (
-        f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{user_id}/{report_name}-{start_timestamp}-{end_timestamp}"
+        f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{user_id}/{report_name}-{start_timestamp}-{end_timestamp}"
     )
     report_job_upload_path = (
         f"{user_id}/{report_name}-{start_timestamp}-{end_timestamp}"
@@ -98,24 +94,24 @@ def create_zip_report_job_path(
     return report_job_file_path, report_job_upload_path, report_job_filename
 
 
-def upload_zip_file(s3_client, file_path, upload_path) -> bool:
+def upload_zip_file(s3_client: client.BaseClient, file_path: str, upload_path) -> bool:
     try:
-        s3_client.upload_file(file_path, THINGS_REPORT_JOB_BUCKET_NAME, f"{upload_path}.zip")
+        s3_client.upload_file(file_path, config.THINGS_REPORT_JOB_BUCKET_NAME, f"{upload_path}.zip")
 
         return True
 
-    except ClientError as error:
+    except exceptions.ClientError as error:
         log.error(f"S3 client upload error: {error}")
 
         raise error
     finally:
-        shutil.rmtree(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{upload_path}")
+        shutil.rmtree(f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{upload_path}")
         os.remove(file_path)
 
         return False
 
 
-def create_presigned_url(s3_client: BaseClient, bucket_name: str, object_name: str) -> str:
+def create_presigned_url(s3_client: client.BaseClient, bucket_name: str, object_name: str) -> str:
     """Generate a presigned URL to share an S3 object
 
     :param s3_client: BaseClient for S3 service
@@ -130,10 +126,10 @@ def create_presigned_url(s3_client: BaseClient, bucket_name: str, object_name: s
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket_name, "Key": object_name},
-            ExpiresIn=THINGS_REPORT_ARCHIVE_EXPIRATION,
+            ExpiresIn=config.THINGS_REPORT_ARCHIVE_EXPIRATION,
         )
 
-    except ClientError as error:
+    except exceptions.ClientError as error:
         log.error(f"create_presigned_url error {error}")
     finally:
         return presigned_url
