@@ -4,13 +4,9 @@ from unittest.mock import patch
 import boto3
 import pytest
 
-import config
-
 import tests.config as test_config
 from tests.helper import helper, archive_job_helper, event_helper
 from util import service_util, s3_util, util
-
-log = config.get_logger()
 
 
 class TestArchiveConsumer:
@@ -23,7 +19,7 @@ class TestArchiveConsumer:
     end_timestamp = "2020-06-23T12:00:00Z"
     end_epoch_timestamp = util.isodate_to_timestamp(end_timestamp)
 
-    job_file_path_prefix = f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{user_id}/{report_name}-{start_epoch_timestamp}-{end_epoch_timestamp}"  # noqa
+    job_file_path_prefix = f"{test_config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{user_id}/{report_name}-{start_epoch_timestamp}-{end_epoch_timestamp}"  # noqa
     job_upload_path = f"{user_id}/{report_name}-{start_epoch_timestamp}-{end_epoch_timestamp}"
     job_path_suffix = f"{report_name}-{0}.zip"
     job_path = f"{job_file_path_prefix}-{job_path_suffix}"

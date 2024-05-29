@@ -21,6 +21,7 @@ def aws_credentials():
 def sqs_client(aws_credentials):
     with moto.mock_aws():
         sqs_conn = boto3.client("sqs", region_name=test_config.AWS_REGION)
+
         yield sqs_conn
 
 

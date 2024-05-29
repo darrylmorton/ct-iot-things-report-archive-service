@@ -1,15 +1,15 @@
-import logging
+import config
 
-from things_report_archive_service.service import ThingsReportArchiveService
+from things_report_archive_service import service
 
-log = logging.getLogger("things_report_archive_service")
+log = config.get_logger()
 
 
 def main() -> None:
     log.info("Starting service")
 
-    service = ThingsReportArchiveService()
-    service.poll()
+    things_report_archive_service = service.ThingsReportArchiveService()
+    things_report_archive_service.poll()
 
 
 if __name__ == "__main__":
