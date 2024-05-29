@@ -46,10 +46,18 @@ class ThingsReportArchiveService:
         job_upload_path = message_body["JobUploadPath"]
 
         csv_files = s3_list_job_files(self.s3_client)
-        message = "Successfully uploaded archive job file"
+        log.info(f"{csv_files=}")
 
         if not csv_files:
-            message = "There are no csv jobs to generate an archive job file"
+            event_message = create_event_message(
+                s3_client=self.s3_client,
+                name=report_name,
+                event=EVENT_ERROR,
+                message="There are no csv jobs to generate an archive job file",
+                job_upload_path=job_upload_path,
+            )
+
+            return self.produce([event_message])
 
         path_prefix, archived = s3_download_job_files(self.s3_client, csv_files)
         uploaded = False
@@ -62,7 +70,7 @@ class ThingsReportArchiveService:
                 s3_client=self.s3_client,
                 name=report_name,
                 event=EVENT_SUCCESS,
-                message=message,
+                message="Successfully uploaded archive job file",
                 job_upload_path=job_upload_path,
             )
 
@@ -72,7 +80,7 @@ class ThingsReportArchiveService:
             s3_client=self.s3_client,
             name=report_name,
             event=EVENT_ERROR,
-            message=message,
+            message="The archive job file failed to upload",
             job_upload_path=job_upload_path,
         )
 

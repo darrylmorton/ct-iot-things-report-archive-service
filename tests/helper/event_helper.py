@@ -124,6 +124,9 @@ def assert_url(actual_url, expected_url):
 def assert_event_message(actual_result, expected_result):
     message_body = json.loads(actual_result.body)
 
+    log.info(f"{message_body["Message"]=}")
+    log.info(f"{expected_result["Message"]=}")
+
     assert validate_uuid4(message_body["Id"]) is True
     assert message_body["Name"] == expected_result["Name"]
     assert len(message_body["Date"]) == len(expected_result["Date"])
