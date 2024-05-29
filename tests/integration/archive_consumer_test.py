@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import boto3
 import pytest
@@ -19,7 +19,7 @@ from util.s3_util import (
     s3_download_job_files,
     upload_zip_file,
 )
-from util.service_util import EVENT_SUCCESS
+from util.service_util import EVENT_SUCCESS, EVENT_ERROR
 from util.util import isodate_to_timestamp
 
 log = get_logger()
@@ -57,22 +57,18 @@ class TestArchiveConsumer:
     ]
     archived_path_suffix = f"dist/{user_id}.zip"
     # fmt: off
-    s3_contents = {
-        'Contents': [
-            {'Key': f"{path_prefix}.zip"},
-            {'Key': f"{path_prefix}/report_name_0-0.cs"},
-            {'Key': f"{path_prefix}/report_name_0-0.csv"},
-            {'Key': f"{path_prefix}/report_name_0-1.csv"},
-            {'Key': f"{path_prefix}/report_name_0-1.sv"}
-        ]
-    }
+    s3_contents = [
+        {'Key': f"{path_prefix}.zip"},
+        {'Key': f"{path_prefix}/report_name_0-0.cs"},
+        {'Key': f"{path_prefix}/report_name_0-0.csv"},
+        {'Key': f"{path_prefix}/report_name_0-1.csv"},
+        {'Key': f"{path_prefix}/report_name_0-1.sv"}
+    ]
 
-    # uploading disabled
     @patch("things_report_archive_service.service.s3_list_job_files")
     @patch("things_report_archive_service.service.s3_download_job_files")
     @patch("things_report_archive_service.service.upload_zip_file")
-    # @pytest.mark.skip(reason="requires real aws credentials")
-    def test_archive_consumer(
+    def test_archive_consumer_success(
             self,
             mock_s3_list_job_files,
             mock_s3_download_job_files,
@@ -108,6 +104,55 @@ class TestArchiveConsumer:
             name=self.report_name,
             event=EVENT_SUCCESS,
             message="Successfully uploaded archive job file",
+            job_upload_path=self.job_upload_path
+        )
+
+        actual_event_messages = event_helper.event_consumer(
+            event_queue, 10
+        )
+
+        event_helper.assert_event_message(actual_event_messages[0], expected_result)
+
+    @patch("things_report_archive_service.service.s3_list_job_files")
+    @patch("things_report_archive_service.service.s3_download_job_files")
+    @patch("things_report_archive_service.service.upload_zip_file")
+    def test_archive_consumer_no_csvs(
+            self,
+            mock_s3_list_job_files,
+            mock_s3_download_job_files,
+            mock_upload_zip_file,
+            archive_service,
+    ):
+        mock_s3_list_job_files.return_value = []
+
+        mock_s3_download_job_files.return_value = (
+            self.path_prefix,
+            self.archived_path_suffix
+        )
+        mock_upload_zip_file.return_value = False
+
+        report_archive_queue, _ = helper.create_sqs_queue(
+            THINGS_REPORT_ARCHIVE_QUEUE,
+            THINGS_REPORT_ARCHIVE_DLQ
+        )
+        event_queue, _ = helper.create_sqs_queue(THINGS_EVENT_QUEUE)
+
+        expected_archive_message = archive_job_helper.create_archive_job_message(
+            self.message_id,
+            self.user_id,
+            self.report_name,
+            self.job_path,
+            self.job_upload_path
+        )
+
+        report_archive_queue.send_messages(Entries=[expected_archive_message])
+        archive_job_helper.service_poll(archive_service, 10)
+
+        expected_result = event_helper.create_event_message(
+            s3_client=archive_service.s3_client,
+            name=self.report_name,
+            event=EVENT_ERROR,
+            message="There are no csv jobs to generate an archive job file",
             job_upload_path=self.job_upload_path
         )
 

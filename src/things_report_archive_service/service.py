@@ -39,43 +39,44 @@ class ThingsReportArchiveService:
         self.event_queue = self.sqs.Queue(f"{THINGS_EVENT_QUEUE}.fifo")
 
     #
-    def _process_message(self, message_body: dict) -> bool:
+    def _process_message(self, message_body: dict) -> list[dict]:
         log.debug("Processing archive job message...")
 
         report_name = message_body["ReportName"]
         job_upload_path = message_body["JobUploadPath"]
 
         csv_files = s3_list_job_files(self.s3_client)
+        message = "Successfully uploaded archive job file"
 
         if not csv_files:
+            message = "There are no csv jobs to generate an archive job file"
+
+        path_prefix, archived = s3_download_job_files(self.s3_client, csv_files)
+        uploaded = False
+
+        if path_prefix and archived:
+            uploaded = upload_zip_file(self.s3_client, path_prefix, archived)
+
+        if uploaded:
             event_message = create_event_message(
                 s3_client=self.s3_client,
                 name=report_name,
-                event=EVENT_ERROR,
-                message="There are no csv jobs to generate an archive job file",
+                event=EVENT_SUCCESS,
+                message=message,
                 job_upload_path=job_upload_path,
             )
 
-            self.produce([event_message])
-
-            return False
-
-        path_prefix, archived = s3_download_job_files(self.s3_client, csv_files)
-
-        if path_prefix and archived:
-            upload_zip_file(self.s3_client, path_prefix, archived)
+            return self.produce([event_message])
 
         event_message = create_event_message(
             s3_client=self.s3_client,
             name=report_name,
-            event=EVENT_SUCCESS,
-            message="Successfully uploaded archive job file",
+            event=EVENT_ERROR,
+            message=message,
             job_upload_path=job_upload_path,
         )
 
-        self.produce([event_message])
-
-        return True
+        return self.produce([event_message])
 
     def poll(self) -> None:
         log.debug("Polling for archive job messages...")
