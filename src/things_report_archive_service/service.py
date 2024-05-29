@@ -110,7 +110,7 @@ class ThingsReportArchiveService:
             raise error
 
     def produce(self, event_messages: list[dict]) -> list[dict]:
-        log.debug(f"Sending event message...")
+        log.debug("Sending event message...")
 
         try:
             if len(event_messages) > 0:

@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import boto3
 import pytest
