@@ -10,16 +10,7 @@ from config import (
     THINGS_REPORT_ARCHIVE_DLQ,
     THINGS_EVENT_QUEUE,
 )
-from util.s3_util import (
-    s3_list_job_files,
-    s3_download_job_files,
-    upload_zip_file,
-)
-from util.service_util import (
-    EVENT_SUCCESS,
-    EVENT_ERROR,
-    create_event_message,
-)
+from util import s3_util, service_util
 
 log = get_logger()
 
@@ -45,41 +36,47 @@ class ThingsReportArchiveService:
         report_name = message_body["ReportName"]
         job_upload_path = message_body["JobUploadPath"]
 
-        csv_files = s3_list_job_files(self.s3_client)
-        log.info(f"{csv_files=}")
+        csv_files2 = s3_util.s3_list_job_files(s3_client=self.s3_client)
+        log.info(f"{csv_files2}")
 
-        if not csv_files:
-            event_message = create_event_message(
+        if not csv_files2:
+            event_message = service_util.create_event_message(
                 s3_client=self.s3_client,
                 name=report_name,
-                event=EVENT_ERROR,
+                event=service_util.EVENT_ERROR,
                 message="There are no csv jobs to generate an archive job file",
                 job_upload_path=job_upload_path,
             )
 
             return self.produce([event_message])
 
-        path_prefix, archived = s3_download_job_files(self.s3_client, csv_files)
-        uploaded = False
+        log.info(f"0 HELLO")
+
+        path_prefix, archived = s3_util.s3_download_job_files(
+            self.s3_client, csv_files2
+        )
+        # uploaded2 = False
 
         if path_prefix and archived:
-            uploaded = upload_zip_file(self.s3_client, path_prefix, archived)
+            uploaded2 = s3_util.upload_zip_file(self.s3_client, path_prefix, archived)
 
-        if uploaded:
-            event_message = create_event_message(
-                s3_client=self.s3_client,
-                name=report_name,
-                event=EVENT_SUCCESS,
-                message="Successfully uploaded archive job file",
-                job_upload_path=job_upload_path,
-            )
+            log.info(f"{uploaded2}")
 
-            return self.produce([event_message])
+            if uploaded2:
+                event_message = service_util.create_event_message(
+                    s3_client=self.s3_client,
+                    name=report_name,
+                    event=service_util.EVENT_SUCCESS,
+                    message="Successfully uploaded archive job file",
+                    job_upload_path=job_upload_path,
+                )
 
-        event_message = create_event_message(
+                return self.produce([event_message])
+
+        event_message = service_util.create_event_message(
             s3_client=self.s3_client,
             name=report_name,
-            event=EVENT_ERROR,
+            event=service_util.EVENT_ERROR,
             message="The archive job file failed to upload",
             job_upload_path=job_upload_path,
         )

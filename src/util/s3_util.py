@@ -101,14 +101,12 @@ def create_zip_report_job_path(
 
 
 def upload_zip_file(s3_client, file_path, upload_path) -> bool:
-    uploaded = False
-
     try:
         s3_client.upload_file(
             file_path, THINGS_REPORT_JOB_BUCKET_NAME, f"{upload_path}.zip"
         )
 
-        uploaded = True
+        return True
 
     except ClientError as error:
         log.error(f"S3 client upload error: {error}")
@@ -118,7 +116,7 @@ def upload_zip_file(s3_client, file_path, upload_path) -> bool:
         shutil.rmtree(f"{THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{upload_path}")
         os.remove(file_path)
 
-        return uploaded
+        return False
 
 
 def create_presigned_url(
