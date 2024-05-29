@@ -1,29 +1,22 @@
 import json
 import boto3
-from botocore.exceptions import ClientError
+from botocore import exceptions
 
-from config import (
-    AWS_REGION,
-    get_logger,
-    THINGS_REPORT_ARCHIVE_QUEUE,
-    QUEUE_WAIT_SECONDS,
-    THINGS_REPORT_ARCHIVE_DLQ,
-    THINGS_EVENT_QUEUE,
-)
+import config
 from util import s3_util, service_util
 
-log = get_logger()
+log = config.get_logger()
 
 
 class ThingsReportArchiveService:
     def __init__(self):
         log.debug("initializing ThingsReportArchiveService...")
 
-        self.sqs = boto3.resource("sqs", region_name=AWS_REGION)
-        self.s3_client = boto3.client("s3", region_name=AWS_REGION)
-        self.report_archive_job_queue = self.sqs.Queue(f"{THINGS_REPORT_ARCHIVE_QUEUE}.fifo")
-        self.report_archive_job_dlq = self.sqs.Queue(f"{THINGS_REPORT_ARCHIVE_DLQ}.fifo")
-        self.event_queue = self.sqs.Queue(f"{THINGS_EVENT_QUEUE}.fifo")
+        self.sqs = boto3.resource("sqs", region_name=config.AWS_REGION)
+        self.s3_client = boto3.client("s3", region_name=config.AWS_REGION)
+        self.report_archive_job_queue = self.sqs.Queue(f"{config.THINGS_REPORT_ARCHIVE_QUEUE}.fifo")
+        self.report_archive_job_dlq = self.sqs.Queue(f"{config.THINGS_REPORT_ARCHIVE_DLQ}.fifo")
+        self.event_queue = self.sqs.Queue(f"{config.THINGS_EVENT_QUEUE}.fifo")
 
     #
     def _process_message(self, message_body: dict) -> list[dict]:
@@ -84,7 +77,7 @@ class ThingsReportArchiveService:
             archive_job_messages = self.report_archive_job_queue.receive_messages(
                 MessageAttributeNames=["All"],
                 MaxNumberOfMessages=10,
-                WaitTimeSeconds=QUEUE_WAIT_SECONDS,
+                WaitTimeSeconds=config.QUEUE_WAIT_SECONDS,
             )
 
             if len(archive_job_messages) > 0:
@@ -95,7 +88,7 @@ class ThingsReportArchiveService:
 
                     self._process_message(message_body)
 
-        except ClientError as error:
+        except exceptions.ClientError as error:
             log.error(f"Couldn't receive report_archive_job_queue messages error {error}")
 
             raise error
@@ -108,7 +101,7 @@ class ThingsReportArchiveService:
                 self.event_queue.send_messages(Entries=event_messages)
 
             return event_messages
-        except ClientError as error:
+        except exceptions.ClientError as error:
             log.error(f"Couldn't receive event_queue messages error {error}")
 
             raise error

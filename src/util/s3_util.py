@@ -4,7 +4,7 @@ import shutil
 from botocore import client, exceptions
 
 import config
-from util.util import isodate_to_timestamp
+from util import util
 
 log = config.get_logger()
 
@@ -80,8 +80,8 @@ def s3_download_job_files(s3_client: client.BaseClient, csv_files: list[dict]):
 def create_zip_report_job_path(
     user_id: str, report_name: str, job_index: int, start_timestamp: str, end_timestamp: str
 ) -> tuple[str, str, str]:
-    start_timestamp = isodate_to_timestamp(start_timestamp)
-    end_timestamp = isodate_to_timestamp(end_timestamp)
+    start_timestamp = util.isodate_to_timestamp(start_timestamp)
+    end_timestamp = util.isodate_to_timestamp(end_timestamp)
     # fmt: off
     report_job_file_path = (
         f"{config.THINGS_REPORT_JOB_FILE_PATH_PREFIX}/{user_id}/{report_name}-{start_timestamp}-{end_timestamp}"
