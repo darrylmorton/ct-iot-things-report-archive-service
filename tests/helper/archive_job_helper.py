@@ -4,7 +4,7 @@ import uuid
 
 import config
 import tests.config as test_config
-from util import s3_util
+from util import util
 from tests.helper import helper
 from things_report_archive_service import service
 
@@ -56,8 +56,8 @@ def create_archive_job_message(
 def expected_archive_job_message(message: dict) -> list[dict]:
     message_body = json.loads(message["MessageBody"])
 
-    start_timestamp = s3_util.isodate_to_timestamp(message_body["StartTimestamp"])
-    end_timestamp = s3_util.isodate_to_timestamp(message_body["EndTimestamp"])
+    start_timestamp = util.isodate_to_timestamp(message_body["StartTimestamp"])
+    end_timestamp = util.isodate_to_timestamp(message_body["EndTimestamp"])
 
     message_id = uuid.uuid4()
     job_path_prefix = f"{message_body["UserId"]}/{message_body["ReportName"]}"

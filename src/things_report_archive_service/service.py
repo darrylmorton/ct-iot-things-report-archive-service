@@ -31,7 +31,7 @@ class ThingsReportArchiveService:
             event_message = service_util.create_event_message(
                 s3_client=self.s3_client,
                 name=report_name,
-                event=service_util.EVENT_ERROR,
+                event_type=config.EVENT_TYPE_ERROR,
                 message="There are no csv jobs to generate an archive job file",
                 job_upload_path=job_upload_path,
             )
@@ -47,7 +47,7 @@ class ThingsReportArchiveService:
                 event_message = service_util.create_event_message(
                     s3_client=self.s3_client,
                     name=report_name,
-                    event=service_util.EVENT_SUCCESS,
+                    event_type=config.EVENT_TYPE_SUCCESS,
                     message="Successfully uploaded archive job file",
                     job_upload_path=job_upload_path,
                 )
@@ -57,7 +57,7 @@ class ThingsReportArchiveService:
         event_message = service_util.create_event_message(
             s3_client=self.s3_client,
             name=report_name,
-            event=service_util.EVENT_ERROR,
+            event_type=config.EVENT_TYPE_ERROR,
             message="The archive job file failed to upload",
             job_upload_path=job_upload_path,
         )

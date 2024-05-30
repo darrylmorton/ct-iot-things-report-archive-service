@@ -9,13 +9,9 @@ from util import s3_util
 
 log = config.get_logger()
 
-EVENT_TYPE = "report_job_archive"
-EVENT_SUCCESS = "archive ready"
-EVENT_ERROR = "archive error"
-
 
 def create_event_message(
-    s3_client: client.BaseClient, name: str, event: str, message: str, job_upload_path: str
+    s3_client: client.BaseClient, name: str, event_type: str, message: str, job_upload_path: str
 ) -> dict:
     message_id = str(uuid.uuid4())
     timestamp = datetime.now(tz=timezone.utc).isoformat()
@@ -26,7 +22,6 @@ def create_event_message(
         s3_client=s3_client,
     )
 
-    event_type = "notification"
     description = "Report Archive Notification"
     read = "False"
 
@@ -45,13 +40,13 @@ def create_event_message(
                 "DataType": "String",
                 "StringValue": timestamp,
             },
+            "Category": {
+                "DataType": "String",
+                "StringValue": config.EVENT_CATEGORY,
+            },
             "Type": {
                 "DataType": "String",
                 "StringValue": event_type,
-            },
-            "Event": {
-                "DataType": "String",
-                "StringValue": event,
             },
             "Description": {
                 "DataType": "String",
@@ -74,8 +69,8 @@ def create_event_message(
             "Id": message_id,
             "Name": name,
             "Date": timestamp,
+            "Category": config.EVENT_CATEGORY,
             "Type": event_type,
-            "Event": event,
             "Description": description,
             "Message": message,
             "Value": presigned_url,
