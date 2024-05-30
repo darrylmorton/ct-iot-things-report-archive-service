@@ -4,9 +4,10 @@ from unittest.mock import patch
 import boto3
 import pytest
 
+import config
 import tests.config as test_config
 from tests.helper import helper, archive_job_helper, event_helper
-from util import service_util, s3_util, util
+from util import s3_util, util
 
 
 class TestArchiveConsumer:
@@ -81,7 +82,7 @@ class TestArchiveConsumer:
                     expected_result = event_helper.create_event_message(
                         s3_client=archive_service.s3_client,
                         name=self.report_name,
-                        event=service_util.EVENT_SUCCESS,
+                        event_type=config.EVENT_TYPE_SUCCESS,
                         message="Successfully uploaded archive job file",
                         job_upload_path=self.job_upload_path
                     )
@@ -120,7 +121,7 @@ class TestArchiveConsumer:
         expected_result = event_helper.create_event_message(
             s3_client=archive_service.s3_client,
             name=self.report_name,
-            event=service_util.EVENT_ERROR,
+            event_type=config.EVENT_TYPE_ERROR,
             message="There are no csv jobs to generate an archive job file",
             job_upload_path=self.job_upload_path
         )
@@ -175,7 +176,7 @@ class TestArchiveConsumer:
                     expected_result = event_helper.create_event_message(
                         s3_client=archive_service.s3_client,
                         name=self.report_name,
-                        event=service_util.EVENT_ERROR,
+                        event_type=config.EVENT_TYPE_ERROR,
                         message="The archive job file failed to upload",
                         job_upload_path=self.job_upload_path
                     )

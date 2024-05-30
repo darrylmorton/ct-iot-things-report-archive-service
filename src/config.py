@@ -19,6 +19,10 @@ THINGS_EVENT_QUEUE = os.environ.get("THINGS_EVENT_QUEUE")
 THINGS_REPORT_JOB_BUCKET_NAME = os.environ.get("THINGS_REPORT_JOB_BUCKET_NAME")
 THINGS_REPORT_ARCHIVE_EXPIRATION = os.environ.get("THINGS_REPORT_ARCHIVE_EXPIRATION")
 
+EVENT_CATEGORY = "Report"
+EVENT_TYPE_SUCCESS = "OK"
+EVENT_TYPE_ERROR = "ERROR"
+
 
 def get_logger() -> logging.Logger:
     logger = logging.getLogger("uvicorn")

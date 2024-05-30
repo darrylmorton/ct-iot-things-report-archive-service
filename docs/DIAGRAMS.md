@@ -20,8 +20,8 @@ classDiagram
         +String: Id
         +String: Name
         +String: Date
+        +String: Category
         +String: Type
-        +String: Event
         +String: Description
         +String: Value
         +Bool: Read 

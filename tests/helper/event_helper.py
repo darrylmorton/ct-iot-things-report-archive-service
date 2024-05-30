@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse, parse_qs, ParseResult
 
+from botocore.client import BaseClient
+
+import config
 from config import get_logger
 import tests.config as test_config
 from util import s3_util
@@ -36,7 +39,9 @@ def event_consumer(event_queue: Any, timeout_seconds=0) -> list[dict]:
     return messages
 
 
-def create_event_message(s3_client: Any, name: str, event: str, message: str, job_upload_path: str):
+def create_event_message(
+    s3_client: BaseClient, name: str, event_type: str, message: str, job_upload_path: str
+):
     message_id = str(uuid.uuid4())
     timestamp = datetime.now(tz=timezone.utc).isoformat()
 
@@ -46,7 +51,6 @@ def create_event_message(s3_client: Any, name: str, event: str, message: str, jo
         s3_client=s3_client,
     )
 
-    event_type = "notification"
     description = "Report Archive Notification"
     read = "False"
 
@@ -54,8 +58,8 @@ def create_event_message(s3_client: Any, name: str, event: str, message: str, jo
         "Id": message_id,
         "Name": name,
         "Date": timestamp,
+        "Category": config.EVENT_CATEGORY,
         "Type": event_type,
-        "Event": event,
         "Description": description,
         "Message": message,
         "Value": presigned_url,
@@ -107,8 +111,8 @@ def assert_event_message(actual_result, expected_result):
     assert helper.validate_uuid4(message_body["Id"]) is True
     assert message_body["Name"] == expected_result["Name"]
     assert len(message_body["Date"]) == len(expected_result["Date"])
+    assert message_body["Category"] == expected_result["Category"]
     assert message_body["Type"] == expected_result["Type"]
-    assert message_body["Event"] == expected_result["Event"]
     assert message_body["Message"] == expected_result["Message"]
     assert message_body["Description"] == expected_result["Description"]
 
