@@ -7,7 +7,7 @@ lint: fmt
 .PHONY: lint
 
 server-start: fmt
-	poetry run uvicorn things_report_archive_service.service:server --port 8001 &
+	poetry run python -m things_report_archive_service
 .PHONY: server-start
 
 test-unit: fmt
